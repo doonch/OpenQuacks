@@ -293,16 +293,32 @@
             UTILS: 'assets/utils.png'
         };
 
-        // Assume tokens.png is a 6x3 Grid. Coordinates map to column (c) and row (r)
+        // Exact fractional coordinates for the 6x4 layout
         const CHIP_SPRITE_MAP = {
-            'WHITE_1': { c: 0, r: 0 }, 'WHITE_2': { c: 1, r: 0 }, 'WHITE_3': { c: 2, r: 0 },
-            'ORANGE_1': { c: 4, r: 0 }, 'ORANGE_6': { c: 5, r: 0 },
-            'RED_1': { c: 0, r: 1 }, 'RED_2': { c: 1, r: 1 }, 'RED_4': { c: 2, r: 1 },
-            'YELLOW_1': { c: 3, r: 1 }, 'YELLOW_2': { c: 4, r: 1 }, 'YELLOW_4': { c: 5, r: 1 },
-            'GREEN_1': { c: 0, r: 2 }, 'GREEN_2': { c: 1, r: 2 },
-            'BLUE_1': { c: 2, r: 2 }, 'BLUE_4': { c: 3, r: 2 },
-            'PURPLE_1': { c: 4, r: 2 },
-            'BLACK_1': { c: 5, r: 2 }
+            'WHITE_1':  { x: 0/6, y: 0/4, w: 1/6, h: 1/4 },
+            'WHITE_2':  { x: 1/6, y: 0/4, w: 1/6, h: 1/4 },
+            'WHITE_3':  { x: 2/6, y: 0/4, w: 1/6, h: 1/4 },
+            'ORANGE_1': { x: 4/6, y: 0/4, w: 1/6, h: 1/4 },
+            'ORANGE_6': { x: 5/6, y: 0/4, w: 1/6, h: 1/4 },
+            
+            'GREEN_1':  { x: 0/6, y: 1/4, w: 1/6, h: 1/4 },
+            'GREEN_2':  { x: 1/6, y: 1/4, w: 1/6, h: 1/4 },
+            'GREEN_4':  { x: 2/6, y: 1/4, w: 1/6, h: 1/4 },
+            'PURPLE_1': { x: 4/6, y: 1/4, w: 1/6, h: 1/4 },
+            'BLACK_1':  { x: 5/6, y: 1/4, w: 1/6, h: 1/4 },
+            
+            'BROWN_0':  { x: 0/6, y: 2/4, w: 1/6, h: 1/4 },
+            'BROWN_1':  { x: 1/6, y: 2/4, w: 1/6, h: 1/4 },
+            'BROWN_2':  { x: 2/6, y: 2/4, w: 1/6, h: 1/4 },
+            'YELLOW_1': { x: 3/6, y: 2/4, w: 1/6, h: 1/4 },
+            'YELLOW_2': { x: 4/6, y: 2/4, w: 1/6, h: 1/4 },
+            'YELLOW_4': { x: 5/6, y: 2/4, w: 1/6, h: 1/4 },
+            
+            'RED_1':    { x: 0/6, y: 3/4, w: 1/6, h: 1/4 },
+            'RED_2':    { x: 1/6, y: 3/4, w: 1/6, h: 1/4 },
+            'RED_4':    { x: 2/6, y: 3/4, w: 1/6, h: 1/4 },
+            'BLUE_1':   { x: 3/6, y: 3/4, w: 1/6, h: 1/4 },
+            'BLUE_4':   { x: 4/6, y: 3/4, w: 1/6, h: 1/4 }
         };
 
         // Utility Sprite Mappings updated for the new irregular layout
@@ -337,9 +353,9 @@
         function getChipSpriteStyle(typeId, value) {
             const def = CHIP_SPRITE_MAP[`${typeId}_${value}`];
             if (!def) return '';
-            const bgPosX = (def.c / 5) * 100; // 5 intervals for 6 columns
-            const bgPosY = (def.r / 2) * 100; // 2 intervals for 3 rows
-            return `background-image: url('${ASSET_PATHS.CHIPS}'); background-size: 600% 300%; background-position: ${bgPosX}% ${bgPosY}%;`;
+            const posX = def.w < 1 ? (def.x / (1 - def.w)) * 100 : 0;
+            const posY = def.h < 1 ? (def.y / (1 - def.h)) * 100 : 0;
+            return `background-image: url('${ASSET_PATHS.CHIPS}'); background-size: ${100/def.w}% ${100/def.h}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`;
         }
 
         function getUtilSpriteStyle(utilKey) {
@@ -360,9 +376,10 @@
             RED:    { id: 'RED', name: 'Toadstool', color: '#ff0000', textCol: '#ffffff', values: [1, 2, 4] },
             YELLOW: { id: 'YELLOW', name: 'Mandrake', color: '#ffd700', textCol: '#000000', values: [1, 2, 4] },
             GREEN:  { id: 'GREEN', name: 'Spider', color: '#008000', textCol: '#ffffff', values: [1, 2, 4] },
-            BLUE:   { id: 'BLUE', name: 'Ghost', color: '#0000ff', textCol: '#ffffff', values: [1, 2, 4] },
+            BLUE:   { id: 'BLUE', name: 'Ghost', color: '#0000ff', textCol: '#ffffff', values: [1, 4] },
             PURPLE: { id: 'PURPLE', name: 'Moth', color: '#800080', textCol: '#ffffff', values: [1] },
-            BLACK:  { id: 'BLACK', name: 'Crow Skull', color: '#000000', textCol: '#ffffff', values: [1] }
+            BLACK:  { id: 'BLACK', name: 'Crow Skull', color: '#000000', textCol: '#ffffff', values: [1] },
+            BROWN:  { id: 'BROWN', name: 'Bug', color: '#8b4513', textCol: '#ffffff', values: [0, 1, 2] } // Debugging only
         };
 
         const TRACK_REWARDS = Array.from({ length: 60 }, (_, i) => ({
@@ -790,9 +807,12 @@
                     const cDef = CHIP_SPRITE_MAP[`${chip.type.id}_${chip.value}`];
                     const imgChips = this.assets.CHIPS;
                     if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
-                        const sw = imgChips.width / 6, sh = imgChips.height / 3;
+                        const sx = cDef.x * imgChips.width;
+                        const sy = cDef.y * imgChips.height;
+                        const sw = cDef.w * imgChips.width;
+                        const sh = cDef.h * imgChips.height;
                         
-                        this.ctx.drawImage(imgChips, cDef.c * sw, cDef.r * sh, sw, sh, pos.x - 20, pos.y - 20, 40, 40);
+                        this.ctx.drawImage(imgChips, sx, sy, sw, sh, pos.x - 20, pos.y - 20, 40, 40);
                     } else {
                         // Fallback circles
                         this.ctx.beginPath(); this.ctx.arc(pos.x, pos.y, 16, 0, Math.PI*2);
