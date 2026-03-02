@@ -48,8 +48,8 @@
         /* Main CSS Grid Layout */
         #game-container {
             display: grid;
-            grid-template-columns: 1fr 300px;
-            grid-template-rows: minmax(0, 1fr) minmax(280px, 35vh);
+            grid-template-columns: 1fr 320px;
+            grid-template-rows: auto 1fr; /* Top board is slim, bottom board takes all remaining space */
             gap: 15px;
             padding: 15px;
             height: 100%;
@@ -87,21 +87,19 @@
         #fortune-teller { border: 2px solid #800080; background: rgba(128, 0, 128, 0.1); }
         #ui-fortune-text { font-style: italic; color: #dda0dd; margin-top: 10px; }
 
-        #ai-panel { grid-column: 2 / 3; grid-row: 1 / 3; overflow-y: auto; }
+        #side-panel { grid-column: 2 / 3; grid-row: 1 / 3; overflow-y: auto; display: flex; flex-direction: column; }
         .ai-card { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 15px; }
 
-        #player-area { grid-column: 1 / 2; grid-row: 2 / 3; flex-direction: row; gap: 20px; }
-        
         #cauldron-wrapper {
-            flex: 1; background-color: var(--canvas-bg); border-radius: 8px;
+            grid-column: 1 / 2; grid-row: 2 / 3;
+            background-color: var(--canvas-bg); border-radius: 8px;
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
             border: 2px dashed #4a4e69;
         }
         canvas { display: block; }
 
-        #player-controls { 
-            width: 260px; display: flex; flex-direction: column; gap: 8px; 
-            overflow-y: auto; padding-right: 5px;
+        .human-section { 
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;
         }
         
         .status-box {
@@ -146,9 +144,19 @@
         .shop-item {
             background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px;
             display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; border: 2px solid transparent;
+            position: relative;
         }
         .shop-item:hover { background: rgba(0,0,0,0.5); }
         .shop-item.disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .tooltip {
+            visibility: hidden; width: 160px; background-color: #0f3460; color: #fff;
+            text-align: center; border-radius: 6px; padding: 8px; position: absolute;
+            z-index: 1001; bottom: 105%; left: 50%; transform: translateX(-50%);
+            opacity: 0; transition: opacity 0.2s; font-size: 0.75rem; pointer-events: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-weight: normal; border: 1px solid #4a4e69;
+        }
+        .shop-item:hover .tooltip { visibility: visible; opacity: 1; }
         
         .chip-icon { 
             width: 36px; height: 36px; border-radius: 50%; display: flex; 
@@ -175,10 +183,6 @@
                     <h3>Round Track</h3>
                     <p>Current Round: <span id="ui-round">1</span> / 9</p>
                 </div>
-                <div class="board-section" id="vp-track">
-                    <h3>Victory Points</h3>
-                    <p>Track Overview</p>
-                </div>
                 <div class="board-section" id="fortune-teller">
                     <h3>Fortune Teller</h3>
                     <p id="ui-fortune-text">Drawing card...</p>
@@ -186,20 +190,15 @@
             </div>
         </div>
 
-        <!-- AI Panel -->
-        <div id="ai-panel" class="panel">
-            <div class="panel-title">Opponents</div>
-            <div id="ai-list"></div>
-        </div>
-
-        <!-- Human Player Area -->
-        <div id="player-area" class="panel">
-            <div id="cauldron-wrapper">
-                <canvas id="cauldron-canvas"></canvas>
-            </div>
+        <!-- Side Panel (Players & Controls) -->
+        <div id="side-panel" class="panel">
+            <div class="panel-title">Players & Controls</div>
             
-            <div id="player-controls">
-                <div class="panel-title" id="ui-player-status-title">My Status</div>
+            <div class="human-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <h3 id="ui-player-status-title" style="color: var(--accent); margin: 0;">My Status</h3>
+                    <span id="ui-my-vp" style="color: var(--text-light); font-weight: bold;">0 VP</span>
+                </div>
                 
                 <div class="status-box">
                     <span>Bag Count:</span>
@@ -232,6 +231,16 @@
                     <button id="btn-stop" class="stop-btn">Stop</button>
                 </div>
             </div>
+
+            <hr style="border-color: var(--panel-border); margin: 10px 0 20px 0;">
+            
+            <h3 style="color: var(--text-light); margin-bottom: 10px; font-size: 1.1rem;">Opponents</h3>
+            <div id="ai-list"></div>
+        </div>
+
+        <!-- Cauldron Canvas -->
+        <div id="cauldron-wrapper">
+            <canvas id="cauldron-canvas"></canvas>
         </div>
     </div>
 
@@ -374,12 +383,30 @@
         ];
 
         const INGREDIENT_BOOKS_SET_1 = {
-            RED: { immediate: (p, c) => { if(p.cauldron.some(ch => ch.type.id === 'ORANGE')) p.currentBrewValue += 1; } },
-            YELLOW: { immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); } },
-            BLUE: { immediate: (p, c) => { if(p.bag.length > 0) { const idx = Math.floor(Math.random() * p.bag.length); const next = p.bag[idx]; if(next.type.id !== 'WHITE') { p.bag.splice(idx, 1); const np = p.currentBrewValue + next.value; p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); p.currentBrewValue = np; } } } },
-            GREEN: { endOfRound: (p) => { const len = p.cauldron.length; if(len >= 1 && (p.cauldron[len-1].type.id === 'GREEN' || (len >= 2 && p.cauldron[len-2].type.id === 'GREEN'))) p.rubies += 1; } },
-            PURPLE: { endOfRound: (p) => { const cnt = p.cauldron.filter(c => c.type.id === 'PURPLE').length; if(cnt===1||cnt===2) p.victoryPoints += 1; else if(cnt>=3) p.victoryPoints += 2; } },
-            BLACK: { endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) { p.victoryPoints += 1; p.rubies += 1; } } }
+            RED: { 
+                description: "If there is at least 1 Pumpkin in your cauldron, move 1 extra space.",
+                immediate: (p, c) => { if(p.cauldron.some(ch => ch.type.id === 'ORANGE')) p.currentBrewValue += 1; } 
+            },
+            YELLOW: { 
+                description: "If the previous chip was a Boomberry, its white value is cancelled.",
+                immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); } 
+            },
+            BLUE: { 
+                description: "Draw 1 extra chip. If ingredient, place it for free! If Boomberry, return to bag.",
+                immediate: (p, c) => { if(p.bag.length > 0) { const idx = Math.floor(Math.random() * p.bag.length); const next = p.bag[idx]; if(next.type.id !== 'WHITE') { p.bag.splice(idx, 1); const np = p.currentBrewValue + next.value; p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); p.currentBrewValue = np; } } } 
+            },
+            GREEN: { 
+                description: "End of Round: Gain 1 Ruby if your last or second-to-last placed chip is a Spider.",
+                endOfRound: (p) => { const len = p.cauldron.length; if(len >= 1 && (p.cauldron[len-1].type.id === 'GREEN' || (len >= 2 && p.cauldron[len-2].type.id === 'GREEN'))) p.rubies += 1; } 
+            },
+            PURPLE: { 
+                description: "End of Round: 1-2 Moths = 1 VP. 3 or more Moths = 2 VP.",
+                endOfRound: (p) => { const cnt = p.cauldron.filter(c => c.type.id === 'PURPLE').length; if(cnt===1||cnt===2) p.victoryPoints += 1; else if(cnt>=3) p.victoryPoints += 2; } 
+            },
+            BLACK: { 
+                description: "End of Round: If you placed at least 1 Crow Skull, gain 1 VP and 1 Ruby.",
+                endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) { p.victoryPoints += 1; p.rubies += 1; } } 
+            }
         };
 
         const SHOP_CATALOG = [
@@ -599,9 +626,15 @@
                     el.className = `shop-item ${disabled ? 'disabled' : ''}`;
                     
                     const chipStyle = getChipSpriteStyle(item.type.id, item.value);
+                    
+                    const book = this.game.books[item.type.id];
+                    let desc = book ? book.description : "";
+                    if (item.type.id === 'ORANGE') desc = "Standard ingredient. Adds value to your brew but has no special effect.";
+                    
                     el.innerHTML = `<div class="chip-icon" style="${chipStyle || `background-color: ${item.type.color};`}">${!chipStyle ? item.value : ''}</div>
                                     <div style="font-size: 0.8em; font-weight: bold;">${item.type.name}</div>
-                                    <div style="font-size: 0.9em; color: gold;">Cost: ${item.cost}</div>`;
+                                    <div style="font-size: 0.9em; color: gold;">Cost: ${item.cost}</div>
+                                    <div class="tooltip">${desc}</div>`;
 
                     if (!disabled) el.addEventListener('click', () => { if (h.buyChip(item.type, item.value, item.cost)) { this.shopCart.push(item); this.renderShopUI(); } });
                     shopItems.appendChild(el);
@@ -618,14 +651,40 @@
                 this.spiralSpaces = [];
                 const w = this.canvas.width, h = this.canvas.height;
                 const centerX = w / 2, centerY = h / 2;
-                const spaceDist = Math.min(w, h) * 0.082; 
-                let r = spaceDist * 0.6, theta = 0;
                 
+                // --- TUNABLE CONSTANTS FOR THE SPIRAL ---
+                const baseSize = Math.min(w, h);
+                
+                // Tweak these values to perfectly align with your background image:
+                const spaceDist = baseSize * 0.075;     // Distance between bubbles along the path (lower = closer together)
+                const armDistance = baseSize * 0.088;   // Distance between the spiral's outer rings (lower = tighter loops)
+                const startRadius = baseSize * 0.03;    // Offset from exact center for the first spaces
+                const angleOffset = Math.PI * -0.4;     // Rotates the entire spiral to match the image's starting angle
+                // ----------------------------------------
+                
+                let r = startRadius; 
+                let theta = 0;
+                
+                // Space 0 (The Droplet starting position)
                 this.spiralSpaces.push({ x: centerX, y: centerY });
+                
+                // Archimedean spiral formula: r = a + b*theta
+                const b = armDistance / (2 * Math.PI);
+                
                 for (let i = 1; i <= 55; i++) {
-                    let dTheta = spaceDist / r; theta += dTheta;
-                    r = (spaceDist * 0.6) + ((spaceDist * 1.25) / (2 * Math.PI)) * theta;
-                    this.spiralSpaces.push({ x: centerX + r * Math.cos(theta), y: centerY + r * Math.sin(theta) });
+                    // Prevent divide-by-zero on the first step if startRadius is 0
+                    let dTheta = spaceDist / (r === 0 ? 1 : r); 
+                    theta += dTheta;
+                    
+                    r = startRadius + (b * theta);
+                    
+                    // Add angleOffset to match the rotation of the hand-drawn artwork
+                    const drawAngle = theta + angleOffset;
+                    
+                    this.spiralSpaces.push({ 
+                        x: centerX + r * Math.cos(drawAngle), 
+                        y: centerY + r * Math.sin(drawAngle) 
+                    });
                 }
             }
 
@@ -647,7 +706,7 @@
                 // 1. Draw Background Image
                 if (this.assets.CAULDRON_BG && this.assets.CAULDRON_BG.complete && this.assets.CAULDRON_BG.naturalWidth > 0) {
                     const img = this.assets.CAULDRON_BG;
-                    const scale = Math.max(w / img.width, h / img.height);
+                    const scale = Math.min(w / img.width, h / img.height); // Use Math.min to prevent cropping
                     const dw = img.width * scale, dh = img.height * scale;
                     this.ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
                 } else {
@@ -715,8 +774,7 @@
                 document.getElementById('ui-round').innerText = this.game.round;
                 if (this.game.currentFortuneCard) document.getElementById('ui-fortune-text').innerText = `"${this.game.currentFortuneCard.text}"`;
 
-                const vpTrackEl = document.getElementById('vp-track');
-                vpTrackEl.innerHTML = `<h3>Victory Points</h3><p>You: ${human.victoryPoints} VP</p><div style="font-size: 0.8rem; margin-top: 5px; color: #aaa;">${this.game.players.filter(p => !p.isHuman).map(p => `${p.name}: ${p.victoryPoints} VP`).join('<br>')}</div>`;
+                document.getElementById('ui-my-vp').innerText = `${human.victoryPoints} VP`;
 
                 document.getElementById('ui-bag-count').innerText = human.bag.length;
                 document.getElementById('ui-rat-tails').innerText = `${human.ratTails}`;
@@ -729,7 +787,7 @@
                 const titleEl = document.getElementById('ui-player-status-title');
                 if (human.exploded) { titleEl.innerText = "EXPLODED!"; titleEl.style.color = "#ff4444"; } 
                 else if (human.hasStopped) { titleEl.innerText = "Stopped Brewing"; titleEl.style.color = "#4caf50"; } 
-                else { titleEl.innerText = "My Status"; titleEl.style.color = "var(--text-main)"; }
+                else { titleEl.innerText = "My Status"; titleEl.style.color = "var(--accent)"; }
 
                 const canDraw = !human.exploded && !human.hasStopped && human.bag.length > 0;
                 document.getElementById('btn-draw').disabled = !canDraw;
