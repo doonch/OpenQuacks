@@ -306,14 +306,14 @@
             'BLACK_1': { c: 5, r: 2 }
         };
 
-        // Utility Sprite Mappings based on fractional width/height locations
+        // Utility Sprite Mappings updated for the new irregular layout
         const UTILS_MAP = {
-            FLASK_FULL:  { x: 0.00, y: 0.0, w: 0.33, h: 0.5 }, // Top-Left
-            FLASK_EMPTY: { x: 0.33, y: 0.0, w: 0.33, h: 0.5 }, // Top-Middle
-            RUBY:        { x: 0.66, y: 0.0, w: 0.17, h: 0.5 }, // Top-Right Area
-            DROPLET:     { x: 0.83, y: 0.0, w: 0.17, h: 0.5 }, // Far Top-Right
-            RAT:         { x: 0.66, y: 0.5, w: 0.17, h: 0.5 }, // Bottom-Right Area
-            VP:          { x: 0.83, y: 0.5, w: 0.17, h: 0.5 }  // Far Bottom-Right
+            FLASK_FULL:  { x: 0.04, y: 0.24, w: 0.19, h: 0.38 }, 
+            FLASK_EMPTY: { x: 0.24, y: 0.24, w: 0.19, h: 0.38 }, 
+            RUBY:        { x: 0.44, y: 0.34, w: 0.13, h: 0.27 }, 
+            DROPLET:     { x: 0.58, y: 0.33, w: 0.10, h: 0.28 }, 
+            RAT:         { x: 0.69, y: 0.38, w: 0.12, h: 0.21 }, 
+            VP:          { x: 0.81, y: 0.34, w: 0.17, h: 0.27 }  
         };
 
         class AssetManager {
@@ -754,6 +754,7 @@
                     const imgChips = this.assets.CHIPS;
                     if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
                         const sw = imgChips.width / 6, sh = imgChips.height / 3;
+                        
                         this.ctx.drawImage(imgChips, cDef.c * sw, cDef.r * sh, sw, sh, pos.x - 20, pos.y - 20, 40, 40);
                     } else {
                         // Fallback circles
