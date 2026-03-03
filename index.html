@@ -372,7 +372,7 @@
          */
         const INGREDIENTS = {
             WHITE:  { id: 'WHITE', name: 'Boomberry', color: '#ffffff', textCol: '#000000', values: [1, 2, 3] },
-            ORANGE: { id: 'ORANGE', name: 'Pumpkin', color: '#ff8c00', textCol: '#ffffff', values: [1] },
+            ORANGE: { id: 'ORANGE', name: 'Pumpkin', color: '#ff8c00', textCol: '#ffffff', values: [1, 6] },
             RED:    { id: 'RED', name: 'Toadstool', color: '#ff0000', textCol: '#ffffff', values: [1, 2, 4] },
             YELLOW: { id: 'YELLOW', name: 'Mandrake', color: '#ffd700', textCol: '#000000', values: [1, 2, 4] },
             GREEN:  { id: 'GREEN', name: 'Spider', color: '#008000', textCol: '#ffffff', values: [1, 2, 4] },
@@ -426,11 +426,11 @@
         };
 
         const SHOP_CATALOG = [
-            { type: INGREDIENTS.ORANGE, value: 1, cost: 3 },
+            { type: INGREDIENTS.ORANGE, value: 1, cost: 3 }, { type: INGREDIENTS.ORANGE, value: 6, cost: 22 },
             { type: INGREDIENTS.GREEN, value: 1, cost: 4 }, { type: INGREDIENTS.GREEN, value: 2, cost: 8 }, { type: INGREDIENTS.GREEN, value: 4, cost: 14 },
             { type: INGREDIENTS.RED, value: 1, cost: 4 }, { type: INGREDIENTS.RED, value: 2, cost: 8 }, { type: INGREDIENTS.RED, value: 4, cost: 14 },
             { type: INGREDIENTS.YELLOW, value: 1, cost: 5 }, { type: INGREDIENTS.YELLOW, value: 2, cost: 10 }, { type: INGREDIENTS.YELLOW, value: 4, cost: 16 },
-            { type: INGREDIENTS.BLUE, value: 1, cost: 5 }, { type: INGREDIENTS.BLUE, value: 2, cost: 10 }, { type: INGREDIENTS.BLUE, value: 4, cost: 19 },
+            { type: INGREDIENTS.BLUE, value: 1, cost: 5 }, { type: INGREDIENTS.BLUE, value: 4, cost: 19 },
             { type: INGREDIENTS.PURPLE, value: 1, cost: 9 }, { type: INGREDIENTS.BLACK, value: 1, cost: 10 }
         ];
 
