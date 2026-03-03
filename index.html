@@ -96,6 +96,12 @@
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
             border: 2px dashed #4a4e69;
         }
+        
+        #explosion-video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; display: none; z-index: 50; pointer-events: none; border-radius: 8px;
+        }
+        
         canvas { display: block; }
 
         .human-section { 
@@ -244,6 +250,7 @@
         <!-- Cauldron Canvas -->
         <div id="cauldron-wrapper">
             <canvas id="cauldron-canvas"></canvas>
+            <video id="explosion-video" src="assets/explosion.mp4" playsinline preload="auto"></video>
         </div>
     </div>
 
@@ -611,12 +618,38 @@
                 loop();
             }
 
+            playExplosionVideo() {
+                return new Promise((resolve) => {
+                    const vid = document.getElementById('explosion-video');
+                    vid.style.display = 'block';
+                    vid.currentTime = 0;
+                    vid.onended = () => { vid.style.display = 'none'; resolve(); };
+                    vid.onerror = () => { vid.style.display = 'none'; resolve(); };
+                    
+                    vid.play().catch(e => {
+                        console.warn("Could not play explosion video:", e);
+                        vid.style.display = 'none';
+                        resolve();
+                    });
+                });
+            }
+
             bindEvents() {
                 window.addEventListener('resize', () => this.handleResize());
-                document.getElementById('btn-draw').addEventListener('click', () => {
-                    this.game.humanPlayer.drawChip(); this.updateFullUI();
+                document.getElementById('btn-draw').addEventListener('click', async () => {
+                    const wasExploded = this.game.humanPlayer.exploded;
+                    this.game.humanPlayer.drawChip(); 
+                    this.updateFullUI();
+                    
+                    // If the latest draw caused an explosion, play the video before triggering the evaluation phase
+                    if (!wasExploded && this.game.humanPlayer.exploded) {
+                        await this.playExplosionVideo();
+                    }
+
                     // Trigger evaluation check if they exploded or ran out of chips
-                    if (this.game.humanPlayer.exploded || this.game.humanPlayer.hasStopped) this.game.checkBrewingPhaseEnd();
+                    if (this.game.humanPlayer.exploded || this.game.humanPlayer.hasStopped) {
+                        this.game.checkBrewingPhaseEnd();
+                    }
                 });
                 document.getElementById('btn-stop').addEventListener('click', () => {
                     this.game.humanPlayer.hasStopped = true; this.updateFullUI(); this.game.checkBrewingPhaseEnd();
