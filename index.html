@@ -775,7 +775,7 @@
                 let theta = 0;
                 
                 // Space 0 (The Droplet starting position)
-                this.spiralSpaces.push({ x: centerX, y: centerY });
+                this.spiralSpaces.push({ x: centerX+w/33, y: centerY-h/80 });
                 
                 // Archimedean spiral formula: r = a + b*theta
                 const b = armDistance / (2 * Math.PI);
