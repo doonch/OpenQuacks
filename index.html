@@ -218,8 +218,11 @@
                     <strong id="ui-rat-tails" style="color: #ffb703;">0</strong>
                 </div>
                 <div class="status-box">
-                    <span>Current Space:</span>
-                    <strong id="ui-brew-value">0</strong>
+                    <span>Brew Value:</span>
+                    <span style="display: flex; align-items: center;">
+                        <strong id="ui-brew-value" style="color: gold;">0</strong>
+                        <span id="ui-brew-ruby" class="icon-small" style="display: none; margin-left: 5px; margin-right: 0;"></span>
+                    </span>
                 </div>
                 <div class="status-box">
                     <span>Boomberries:</span>
@@ -444,6 +447,12 @@
                 this.flaskActive = true; this.dropletPosition = 0; this.ratTails = 0;
                 this.inventory = []; this.bag = []; this.cauldron = [];
                 
+                // Explicitly initialize round states here to prevent UI errors on first load
+                this.currentBrewValue = 0;
+                this.currentWhiteValue = 0;
+                this.exploded = false;
+                this.hasStopped = false;
+
                 const startChips = [
                     { type: INGREDIENTS.WHITE, value: 1 }, { type: INGREDIENTS.WHITE, value: 1 },
                     { type: INGREDIENTS.WHITE, value: 1 }, { type: INGREDIENTS.WHITE, value: 1 },
@@ -506,8 +515,15 @@
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; this.books = INGREDIENT_BOOKS_SET_1;
-                this.humanPlayer = new Player('You', true, this); this.players.push(this.humanPlayer);
-                for(let i=1; i<=this.config.numAIs; i++) this.players.push(new Player(`AI ${i}`, false, this));
+                this.setupPlayers();
+            }
+
+            setupPlayers() {
+                this.humanPlayer = new Player('You', true, this);
+                this.players.push(this.humanPlayer);
+                for(let i=1; i<=this.config.numAIs; i++) {
+                    this.players.push(new Player(`AI ${i}`, false, this));
+                }
             }
 
             startGame() { this.round = 1; this.startRound(); }
@@ -540,7 +556,7 @@
                 this.phase = 'Evaluation';
                 
                 this.players.forEach(p => {
-                    const trackSpace = TRACK_REWARDS[Math.min(p.currentBrewValue, TRACK_REWARDS.length - 1)];
+                    const trackSpace = TRACK_REWARDS[Math.min(p.currentBrewValue || 0, TRACK_REWARDS.length - 1)];
                     p.roundVP = trackSpace.vp; p.roundMoney = trackSpace.money; p.roundRuby = trackSpace.ruby;
                 });
 
@@ -842,7 +858,17 @@
 
                 document.getElementById('ui-bag-count').innerText = human.bag.length;
                 document.getElementById('ui-rat-tails').innerText = `${human.ratTails}`;
-                document.getElementById('ui-brew-value').innerText = human.currentBrewValue;
+                
+                const brewVal = human.currentBrewValue || 0;
+                const currentReward = TRACK_REWARDS[Math.min(brewVal, TRACK_REWARDS.length - 1)];
+                document.getElementById('ui-brew-value').innerText = currentReward.money;
+                
+                const brewRubyEl = document.getElementById('ui-brew-ruby');
+                if (currentReward.ruby) {
+                    brewRubyEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}`;
+                } else {
+                    brewRubyEl.style.display = 'none';
+                }
                 
                 const wEl = document.getElementById('ui-white-value');
                 wEl.innerText = `${human.currentWhiteValue} / ${this.game.config.explosionThreshold}`;
