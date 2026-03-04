@@ -286,6 +286,19 @@
         </div>
     </div>
 
+    <div id="bag-modal" class="modal-overlay" style="z-index: 1005;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>🎒 What's in my bag?</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">
+                These are all the ingredient tokens you own, including those played this round and newly purchased ones.
+            </p>
+            <div id="bag-items" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <!-- Tokens injected here via JS -->
+            </div>
+            <button id="btn-close-bag" style="background-color: #4a4e69;">Close</button>
+        </div>
+    </div>
+
     <div id="game-over-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>🏆 Game Over 🏆</h2>
@@ -664,6 +677,8 @@
                 document.getElementById('btn-choose-vp').addEventListener('click', () => { this.game.humanPlayer.victoryPoints += this.game.humanPlayer.roundVP; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
                 document.getElementById('btn-choose-money').addEventListener('click', () => { this.game.humanPlayer.money += this.game.humanPlayer.roundMoney; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
                 document.getElementById('btn-finish-buying').addEventListener('click', () => { document.getElementById('shop-modal').style.display = 'none'; this.game.endRound(); });
+                
+                document.getElementById('btn-close-bag').addEventListener('click', () => { document.getElementById('bag-modal').style.display = 'none'; });
             }
 
             showExplosionModal(vp, money) {
@@ -674,6 +689,30 @@
             showGameOver() {
                 const scores = [...this.game.players].sort((a,b) => b.victoryPoints - a.victoryPoints).map((p, i) => `<div style="display: flex; justify-content: space-between; padding: 5px 20px; background: ${i%2===0?'rgba(255,255,255,0.1)':'transparent'};"><span>${i===0?'👑 ':''}${p.name}</span><strong>${p.victoryPoints} VP</strong></div>`).join('');
                 document.getElementById('final-scores').innerHTML = scores; document.getElementById('game-over-modal').style.display = 'flex';
+            }
+
+            showBagModal() {
+                const h = this.game.humanPlayer;
+                const container = document.getElementById('bag-items');
+                container.innerHTML = '';
+                
+                // Sort inventory for better visualization (by type, then value)
+                const sortedInventory = [...h.inventory].sort((a, b) => {
+                    if (a.type.id === b.type.id) return a.value - b.value;
+                    return a.type.id.localeCompare(b.type.id);
+                });
+
+                sortedInventory.forEach(item => {
+                    const chipStyle = getChipSpriteStyle(item.type.id, item.value);
+                    const el = document.createElement('div');
+                    el.className = 'chip-icon';
+                    el.style.cssText = chipStyle || `background-color: ${item.type.color};`;
+                    if (!chipStyle) el.innerText = item.value;
+                    el.title = `${item.type.name} (${item.value})`; // Tooltip on hover
+                    container.appendChild(el);
+                });
+
+                document.getElementById('bag-modal').style.display = 'flex';
             }
 
             startBuyingPhase() {
@@ -753,6 +792,25 @@
                     });
                 }
                 shopItems.appendChild(flaskEl);
+
+                // 3. View Bag
+                const bagEl = document.createElement('div');
+                const canAffordBag = h.rubies >= 1;
+                bagEl.className = `shop-item ${!canAffordBag ? 'disabled' : ''}`;
+                bagEl.innerHTML = `
+                    <div style="font-size: 2rem; display: flex; align-items: center; justify-content: center; height: 35px; margin-bottom: 5px;">🎒</div>
+                    <div style="font-size: 0.8em; font-weight: bold;">View Bag</div>
+                    <div style="font-size: 0.9em; color: #ff4444;">Cost: 1 Ruby</div>
+                    <div class="tooltip">Peek inside your bag to see all your tokens (played, unplayed, and newly purchased).</div>
+                `;
+                if (canAffordBag) {
+                    bagEl.addEventListener('click', () => {
+                        h.rubies -= 1;
+                        this.renderShopUI();
+                        this.showBagModal();
+                    });
+                }
+                shopItems.appendChild(bagEl);
             }
 
             handleResize() {
@@ -822,7 +880,7 @@
                 let drawBubbling = false;
 
                 // Determine if we should draw the bubbling video instead of the static background
-                if (player && player.currentWhiteValue > 0 && bubblingVid.readyState >= 2) {
+                if (player && player.currentWhiteValue > 3 && bubblingVid.readyState >= 2) {
                     drawBubbling = true;
                     if (bubblingVid.paused) bubblingVid.play().catch(e => console.warn("Bubbling video play error:", e));
                 } else {
@@ -977,6 +1035,9 @@
             const gameController = new GameController(gameConfig);
             const uiManager = new UIManager(gameController, window.GAME_ASSETS);
             gameController.startGame();
+            
+            // Show the bag right away on round 1
+            uiManager.showBagModal();
         };
 
     </script>
