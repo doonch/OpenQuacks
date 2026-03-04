@@ -641,6 +641,7 @@
                     vid.currentTime = 0;
                     
                     vid.onerror = () => { vid.style.display = 'none'; resolve(); };
+                    vid.onended = () => { vid.currentTime = 0; };
                     
                     vid.play().then(() => {
                         // Resolve the promise after 1 full loop so the evaluation modal can appear
