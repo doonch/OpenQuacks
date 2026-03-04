@@ -251,6 +251,7 @@
         <div id="cauldron-wrapper">
             <canvas id="cauldron-canvas"></canvas>
             <video id="explosion-video" src="assets/explosion.mp4" playsinline preload="auto"></video>
+            <video id="bubbling-video" src="assets/cauldron_bubble1.mp4" playsinline preload="auto" muted loop style="display: none;"></video>
         </div>
     </div>
 
@@ -623,10 +624,14 @@
                     const vid = document.getElementById('explosion-video');
                     vid.style.display = 'block';
                     vid.currentTime = 0;
-                    vid.onended = () => { vid.style.display = 'none'; resolve(); };
+                    
                     vid.onerror = () => { vid.style.display = 'none'; resolve(); };
                     
-                    vid.play().catch(e => {
+                    vid.play().then(() => {
+                        // Resolve the promise after 1 full loop so the evaluation modal can appear
+                        const durationMs = (vid.duration && !isNaN(vid.duration)) ? vid.duration * 1000 : 2000;
+                        setTimeout(resolve, durationMs);
+                    }).catch(e => {
                         console.warn("Could not play explosion video:", e);
                         vid.style.display = 'none';
                         resolve();
@@ -774,9 +779,9 @@
                 let r = startRadius; 
                 let theta = 0;
                 
-                // Space 0 (The Droplet starting position)
+                // Space 0 (The Droplet starting position) adjusted to the bg image
                 this.spiralSpaces.push({ x: centerX+w/33, y: centerY-h/80 });
-                
+
                 // Archimedean spiral formula: r = a + b*theta
                 const b = armDistance / (2 * Math.PI);
                 
@@ -812,8 +817,24 @@
                 this.ctx.clearRect(0, 0, w, h);
                 this.ctx.fillStyle = '#22223b'; this.ctx.fillRect(0, 0, w, h);
 
-                // 1. Draw Background Image
-                if (this.assets.CAULDRON_BG && this.assets.CAULDRON_BG.complete && this.assets.CAULDRON_BG.naturalWidth > 0) {
+                const player = this.game.humanPlayer; // Renamed hPlayer to player
+                const bubblingVid = document.getElementById('bubbling-video');
+                let drawBubbling = false;
+
+                // Determine if we should draw the bubbling video instead of the static background
+                if (player && player.currentWhiteValue > 0 && bubblingVid.readyState >= 2) {
+                    drawBubbling = true;
+                    if (bubblingVid.paused) bubblingVid.play().catch(e => console.warn("Bubbling video play error:", e));
+                } else {
+                    if (!bubblingVid.paused) bubblingVid.pause();
+                }
+
+                // 1. Draw Background Image or Video
+                if (drawBubbling) {
+                    const scale = Math.min(w / bubblingVid.videoWidth, h / bubblingVid.videoHeight);
+                    const dw = bubblingVid.videoWidth * scale, dh = bubblingVid.videoHeight * scale;
+                    this.ctx.drawImage(bubblingVid, (w - dw) / 2, (h - dh) / 2, dw, dh);
+                } else if (this.assets.CAULDRON_BG && this.assets.CAULDRON_BG.complete && this.assets.CAULDRON_BG.naturalWidth > 0) {
                     const img = this.assets.CAULDRON_BG;
                     const scale = Math.min(w / img.width, h / img.height); // Use Math.min to prevent cropping
                     const dw = img.width * scale, dh = img.height * scale;
@@ -834,24 +855,23 @@
                 }
 
                 // 3. Draw Droplet & Rat
-                const hPlayer = this.game.humanPlayer;
-                if(this.spiralSpaces[hPlayer.dropletPosition]) {
-                    const dp = this.spiralSpaces[hPlayer.dropletPosition];
+                if(this.spiralSpaces[player.dropletPosition]) {
+                    const dp = this.spiralSpaces[player.dropletPosition];
                     if(!this.drawSprite('UTILS', UTILS_MAP.DROPLET, dp.x - 18, dp.y - 18, 36, 36)) {
                         this.ctx.beginPath(); this.ctx.arc(dp.x, dp.y, 14, 0, Math.PI * 2);
                         this.ctx.fillStyle = '#00b4d8'; this.ctx.fill();
                     }
                 }
 
-                if(hPlayer.ratTails > 0 && this.spiralSpaces[hPlayer.dropletPosition + hPlayer.ratTails]) {
-                    const rp = this.spiralSpaces[hPlayer.dropletPosition + hPlayer.ratTails];
+                if(player.ratTails > 0 && this.spiralSpaces[player.dropletPosition + player.ratTails]) {
+                    const rp = this.spiralSpaces[player.dropletPosition + player.ratTails];
                     if(!this.drawSprite('UTILS', UTILS_MAP.RAT, rp.x - 16, rp.y - 16, 32, 32)) {
                         this.ctx.font = '20px Arial'; this.ctx.fillText('🐀', rp.x - 10, rp.y + 7);
                     }
                 }
 
                 // 4. Draw Placed Chips (with Fade-In)
-                hPlayer.cauldron.forEach(chip => {
+                player.cauldron.forEach(chip => {
                     const pos = this.spiralSpaces[chip.spaceIndex];
                     if (!pos) return;
 
@@ -882,6 +902,13 @@
             updateFullUI() {
                 const human = this.game.humanPlayer;
                 if (!human) return;
+
+                // Hide the explosion video when we reset for a new round
+                const explVid = document.getElementById('explosion-video');
+                if (!human.exploded && explVid.style.display !== 'none') {
+                    explVid.style.display = 'none';
+                    explVid.pause();
+                }
 
                 document.getElementById('ui-phase').innerText = `(Phase: ${this.game.phase})`;
                 document.getElementById('ui-round').innerText = this.game.round;
