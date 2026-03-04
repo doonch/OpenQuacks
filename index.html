@@ -226,6 +226,8 @@
                 <div class="status-box">
                     <span>Brew Value:</span>
                     <span style="display: flex; align-items: center;">
+                        <strong id="ui-brew-vp" style="color: #f5f5f5; display: none;">0</strong>
+                        <span id="ui-brew-vp-icon" class="icon-small" style="display: none; margin-left: 5px; margin-right: 10px;"></span>
                         <strong id="ui-brew-value" style="color: gold;">0</strong>
                         <span id="ui-brew-ruby" class="icon-small" style="display: none; margin-left: 5px; margin-right: 0;"></span>
                     </span>
@@ -986,6 +988,17 @@
                     brewRubyEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}`;
                 } else {
                     brewRubyEl.style.display = 'none';
+                }
+
+                const brewVpEl = document.getElementById('ui-brew-vp');
+                const brewVpIconEl = document.getElementById('ui-brew-vp-icon');
+                if (currentReward.vp > 0) {
+                    brewVpEl.innerText = currentReward.vp;
+                    brewVpEl.style.display = 'inline-block';
+                    brewVpIconEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 10px; ${getUtilSpriteStyle('VP')}`;
+                } else {
+                    brewVpEl.style.display = 'none';
+                    brewVpIconEl.style.display = 'none';
                 }
                 
                 const wEl = document.getElementById('ui-white-value');
