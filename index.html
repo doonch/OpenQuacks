@@ -427,7 +427,12 @@
         const INGREDIENT_BOOKS_SET_1 = {
             RED: { 
                 description: "If there is at least 1 Pumpkin in your cauldron, move 1 extra space.",
-                immediate: (p, c) => { if(p.cauldron.some(ch => ch.type.id === 'ORANGE')) p.currentBrewValue += 1; } 
+                immediate: (p, c) => { 
+                    if(p.cauldron.some(ch => ch.type.id === 'ORANGE')) {
+                        p.currentBrewValue += 1; 
+                        c.spaceIndex += 1; // Update the actual chip's position on the board
+                    }
+                } 
             },
             YELLOW: { 
                 description: "If the previous chip was a Boomberry, its white value is cancelled.",
