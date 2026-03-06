@@ -607,12 +607,18 @@
             }
 
             endRound() {
-                this.players.forEach(p => p.money = 0);
                 if (this.round === 9) {
-                    this.players.forEach(p => { p.victoryPoints += Math.floor(p.money / 5) + Math.floor(p.rubies / 2); });
+                    this.players.forEach(p => { 
+                        p.finalMoney = p.money;
+                        p.finalRubies = p.rubies;
+                        p.convertedVP = Math.floor(p.money / 5) + Math.floor(p.rubies / 2);
+                        p.victoryPoints += p.convertedVP; 
+                    });
                     if (this.uiManager) { this.uiManager.showGameOver(); document.getElementById('ui-phase').innerText = `(Game Over)`; }
                     return;
                 }
+                
+                this.players.forEach(p => p.money = 0); // Reset money only if the game is continuing
                 this.round++; this.startRound();
             }
         }
@@ -701,7 +707,25 @@
                     titleEl.innerText = "🏆 Game Over 🏆";
                 }
 
-                const scores = sortedPlayers.map((p, i) => `<div style="display: flex; justify-content: space-between; padding: 5px 20px; background: ${i%2===0?'rgba(255,255,255,0.1)':'transparent'};"><span>${i===0?'👑 ':''}${p.name}</span><strong>${p.victoryPoints} VP</strong></div>`).join('');
+                const scores = sortedPlayers.map((p, i) => {
+                    // Extract the converted amounts
+                    const moneyVP = Math.floor(p.money / 5);
+                    const rubyVP = Math.floor(p.rubies / 2);
+                    const baseVP = p.victoryPoints - moneyVP - rubyVP; // Back-calculate the base VP before conversion
+                    
+                    return `<div style="display: flex; flex-direction: column; padding: 10px 15px; background: ${i%2===0?'rgba(255,255,255,0.1)':'transparent'}; border-radius: 8px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span>${i===0?'👑 ':''}${p.name}</span>
+                            <strong style="color: var(--accent); font-size: 1.2em;">${p.victoryPoints} VP</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #aaa; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 5px;">
+                            <span>Base: <strong style="color: #f5f5f5;">${baseVP}</strong></span>
+                            <span>Money (${p.money}): <strong style="color: gold;">+${moneyVP}</strong></span>
+                            <span>Rubies (${p.rubies}): <strong style="color: #ff4444;">+${rubyVP}</strong></span>
+                        </div>
+                    </div>`;
+                }).join('');
+                
                 document.getElementById('final-scores').innerHTML = scores; document.getElementById('game-over-modal').style.display = 'flex';
             }
 
