@@ -285,7 +285,7 @@
 
     <div id="bag-modal" class="modal-overlay" style="z-index: 1005;">
         <div class="modal-content" style="max-width: 500px;">
-            <h2>🎒 What's in my bag?</h2>
+            <h2 id="bag-modal-title">🎒 What's in my bag?</h2>
             <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">
                 These are all the ingredient tokens you own, including those played this round and newly purchased ones.
             </p>
@@ -635,6 +635,8 @@
                 this.wrapper = document.getElementById('cauldron-wrapper');
                 this.spiralSpaces = []; this.shopCart = [];
                 
+                this.isDebug = window.location.href.includes('debug=1');
+
                 this.bindEvents(); this.handleResize(); this.updateFullUI();
                 this.startAnimationLoop(); // Continuous loop for fades
             }
@@ -729,13 +731,20 @@
                 document.getElementById('final-scores').innerHTML = scores; document.getElementById('game-over-modal').style.display = 'flex';
             }
 
-            showBagModal() {
-                const h = this.game.humanPlayer;
+            showBagModal(player = null) {
+                const p = player || this.game.humanPlayer;
                 const container = document.getElementById('bag-items');
                 container.innerHTML = '';
                 
+                const titleEl = document.getElementById('bag-modal-title');
+                if (p.isHuman) {
+                    titleEl.innerText = "🎒 What's in my bag?";
+                } else {
+                    titleEl.innerText = `🎒 ${p.name}'s bag (Debug)`;
+                }
+
                 // Sort inventory for better visualization (by type, then value)
-                const sortedInventory = [...h.inventory].sort((a, b) => {
+                const sortedInventory = [...p.inventory].sort((a, b) => {
                     if (a.type.id === b.type.id) return a.value - b.value;
                     return a.type.id.localeCompare(b.type.id);
                 });
@@ -872,7 +881,7 @@
                     bagEl.addEventListener('click', () => {
                         h.rubies -= 1;
                         this.renderShopUI();
-                        this.showBagModal();
+                        this.showBagModal(); // Calls default, which is human player
                     });
                 }
                 shopItems.appendChild(bagEl);
@@ -1151,6 +1160,17 @@
                     brewHtml += `</div>`;
 
                     card.innerHTML = `<strong>${ai.name}</strong><div style="font-size: 0.9em; margin-top: 5px;"><div>VP: ${ai.victoryPoints} | Rubies: ${ai.rubies}</div>${brewHtml}<div style="color: ${ai.exploded ? '#ff4444' : '#aaaaaa'}">Status: ${status}</div></div>`;
+                    
+                    if (this.isDebug) {
+                        card.style.cursor = 'pointer';
+                        card.title = "Shift-click to peek at bag (Debug)";
+                        card.addEventListener('click', (e) => {
+                            if (e.shiftKey) {
+                                this.showBagModal(ai);
+                            }
+                        });
+                    }
+
                     aiListEl.appendChild(card);
                 });
             }
