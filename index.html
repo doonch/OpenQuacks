@@ -178,7 +178,10 @@
     <div id="game-container">
         <!-- Main Board Area -->
         <div id="main-board" class="panel">
-            <div class="panel-title">Main Board <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Phase: Brewing)</span></div>
+            <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Main Board <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Phase: Brewing)</span></span>
+                <button id="btn-help" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #00b4d8; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none; margin-left: auto;" title="How to play">?</button>
+            </div>
             <div class="board-sections">
                 <div class="board-section" id="round-track">
                     <h3>Round Track</h3>
@@ -253,6 +256,17 @@
     </div>
 
     <!-- Modals -->
+    <div id="help-modal" class="modal-overlay" style="z-index: 1007;">
+        <div class="modal-content">
+            <h2>❓ How to Play Open Quacks</h2>
+            <p style="margin: 15px 0; font-size: 1.1em; line-height: 1.5; color: #ddd;">
+                Draw ingredients from your bag to fill your cauldron and earn money and victory points. 
+                Buy new ingredients to make your brew more powerful, but be careful not to draw too many Boomberries (white tokens), or your cauldron will explode!
+            </p>
+            <button id="btn-close-help" style="background-color: #4caf50;">Got it!</button>
+        </div>
+    </div>
+
     <div id="bonus-die-modal" class="modal-overlay" style="z-index: 1006;">
         <div class="modal-content">
             <h2>🎲 Bonus Die Roll! 🎲</h2>
@@ -742,6 +756,13 @@
                     document.getElementById('bonus-die-modal').style.display = 'none'; 
                     this.game.continueEvaluationPhase(); 
                 });
+
+                document.getElementById('btn-help').addEventListener('click', () => { this.showHelpModal(); });
+                document.getElementById('btn-close-help').addEventListener('click', () => { document.getElementById('help-modal').style.display = 'none'; });
+            }
+
+            showHelpModal() {
+                document.getElementById('help-modal').style.display = 'flex';
             }
 
             showBonusDieModal(resultText) {
@@ -1246,6 +1267,11 @@
             const uiManager = new UIManager(gameController, window.GAME_ASSETS);
             gameController.startGame();
             
+            const isHelp = window.location.href.includes('help=1');
+            if (isHelp) {
+                uiManager.showHelpModal();
+            }
+
             // Show the bag right away on round 1
             uiManager.showBagModal();
         };
