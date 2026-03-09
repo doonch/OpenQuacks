@@ -383,7 +383,7 @@
         };
 
         // 4x4 Grid Constants for Characters
-        const CHAR_ROW = { 'WITCH': 0, 'WIZARD': 1, 'MONK': 2, 'CHILD': 3 };
+        const CHAR_ROW = { 'WIZARD': 0, 'WITCH': 1, 'MONK': 2, 'CHILD': 3 };
         const MOOD_COL = { 'SMIRK': 0, 'CONCERN': 1, 'DISAPPOINTMENT': 2, 'TRIUMPHANT': 3 };
 
         class AssetManager {
@@ -606,10 +606,10 @@
             }
 
             setupPlayers() {
-                this.humanPlayer = new Player('You', true, this, 'WITCH');
+                this.humanPlayer = new Player('You', true, this, 'CHILD');
                 this.players.push(this.humanPlayer);
                 
-                const aiChars = ['WIZARD', 'MONK', 'CHILD'];
+                const aiChars = ['WITCH', 'MONK', 'WIZARD'];
                 for(let i=1; i<=this.config.numAIs; i++) {
                     this.players.push(new Player(`AI ${i}`, false, this, aiChars[(i-1) % aiChars.length]));
                 }
@@ -852,7 +852,7 @@
                     return `<div style="display: flex; flex-direction: column; padding: 10px 15px; background: ${i%2===0?'rgba(255,255,255,0.1)':'transparent'}; border-radius: 8px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 55px; height: 55px; border-radius: 50%; border: 2px solid ${isWinner ? 'gold' : '#666'}; ${faceStyle}"></div>
+                                <div style="width: 55px; height: 70px; border-radius: 50%; border: 2px solid ${isWinner ? 'gold' : '#666'}; ${faceStyle}"></div>
                                 <span>${isWinner ? '👑 ' : ''}${p.name}</span>
                             </div>
                             <strong style="color: var(--accent); font-size: 1.2em;">${p.victoryPoints} VP</strong>
