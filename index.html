@@ -182,7 +182,10 @@
         <div id="main-board" class="panel">
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>Main Board <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Phase: Brewing)</span></span>
-                <button id="btn-help" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #00b4d8; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none; margin-left: auto;" title="How to play">?</button>
+                <div style="display: flex; gap: 5px; margin-left: auto;">
+                    <button id="btn-settings" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #6a6e8f; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="Settings">⚙️</button>
+                    <button id="btn-help" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #00b4d8; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="How to play">?</button>
+                </div>
             </div>
             <div class="board-sections">
                 <div class="board-section" id="human-character">
@@ -261,6 +264,17 @@
     </div>
 
     <!-- Modals -->
+    <div id="char-select-modal" class="modal-overlay" style="z-index: 1008;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 id="char-select-title">🎭 Select Your Character</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">Choose your avatar for this game.</p>
+            <div id="char-select-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <!-- Filled via JS -->
+            </div>
+            <button id="btn-close-char-select" style="background-color: #4a4e69; margin-top: 20px; display: none;">Cancel</button>
+        </div>
+    </div>
+
     <div id="help-modal" class="modal-overlay" style="z-index: 1007;">
         <div class="modal-content">
             <h2>❓ How to Play Open Quacks</h2>
@@ -334,6 +348,28 @@
     </div>
 
     <script>
+        // --- Cookie Helpers ---
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                let date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+        }
+
+        function getCookie(name) {
+            let nameEQ = name + "=";
+            let ca = document.cookie.split(';');
+            for(let i=0;i < ca.length;i++) {
+                let c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
+        }
+
         /**
          * 1. ASSET MANAGEMENT & SPRITE MAPS
          */
@@ -602,16 +638,24 @@
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; this.books = INGREDIENT_BOOKS_SET_1;
-                this.setupPlayers();
             }
 
-            setupPlayers() {
-                this.humanPlayer = new Player('You', true, this, 'CHILD');
+            setupPlayers(humanCharName = 'WITCH') {
+                this.players = []; // Reset players list
+                this.humanPlayer = new Player('You', true, this, humanCharName);
                 this.players.push(this.humanPlayer);
                 
-                const aiChars = ['WITCH', 'MONK', 'WIZARD'];
+                const allChars = ['WITCH', 'WIZARD', 'MONK', 'CHILD'];
+                const availableChars = allChars.filter(c => c !== humanCharName);
+                
+                // Randomly shuffle available characters for AIs
+                for (let i = availableChars.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [availableChars[i], availableChars[j]] = [availableChars[j], availableChars[i]];
+                }
+                
                 for(let i=1; i<=this.config.numAIs; i++) {
-                    this.players.push(new Player(`AI ${i}`, false, this, aiChars[(i-1) % aiChars.length]));
+                    this.players.push(new Player(`AI ${i}`, false, this, availableChars[i-1]));
                 }
             }
 
@@ -810,8 +854,61 @@
                     this.game.continueEvaluationPhase(); 
                 });
 
+                document.getElementById('btn-settings').addEventListener('click', () => { this.showCharacterSelect(false); });
                 document.getElementById('btn-help').addEventListener('click', () => { this.showHelpModal(); });
                 document.getElementById('btn-close-help').addEventListener('click', () => { document.getElementById('help-modal').style.display = 'none'; });
+            }
+
+            showCharacterSelect(isMandatory = false) {
+                const grid = document.getElementById('char-select-grid');
+                grid.innerHTML = '';
+                const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD'];
+                
+                chars.forEach(charName => {
+                    const btn = document.createElement('div');
+                    const isCurrent = (!isMandatory && this.game.humanPlayer && this.game.humanPlayer.character === charName);
+                    
+                    btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(0,0,0,0.5); transition: border-color 0.2s; ${getCharacterSpriteStyle(charName, 'SMIRK')}`;
+                    
+                    btn.addEventListener('click', () => {
+                        setCookie('selectedCharacter', charName, 365);
+                        document.getElementById('char-select-modal').style.display = 'none';
+                        
+                        if (isMandatory) {
+                            this.game.setupPlayers(charName);
+                            this.game.startGame();
+                            this.updateFullUI();
+                            
+                            const isHelp = window.location.href.includes('help=1');
+                            if (isHelp) this.showHelpModal();
+                            this.showBagModal();
+                        } else {
+                            // Swap dynamically mid-game
+                            const oldChar = this.game.humanPlayer.character;
+                            if (oldChar !== charName) {
+                                this.game.humanPlayer.character = charName;
+                                const conflictAI = this.game.players.find(p => !p.isHuman && p.character === charName);
+                                if (conflictAI) conflictAI.character = oldChar; // Swap AI to old human char
+                                this.updateFullUI();
+                            }
+                        }
+                    });
+                    
+                    btn.addEventListener('mouseenter', () => { if (btn.style.borderColor !== 'gold') btn.style.borderColor = '#e94560'; });
+                    btn.addEventListener('mouseleave', () => { if (!isCurrent) btn.style.borderColor = 'transparent'; });
+                    
+                    grid.appendChild(btn);
+                });
+                
+                const closeBtn = document.getElementById('btn-close-char-select');
+                if (isMandatory) {
+                    closeBtn.style.display = 'none';
+                } else {
+                    closeBtn.style.display = 'inline-block';
+                    closeBtn.onclick = () => { document.getElementById('char-select-modal').style.display = 'none'; };
+                }
+                
+                document.getElementById('char-select-modal').style.display = 'flex';
             }
 
             showHelpModal() {
@@ -1088,6 +1185,8 @@
                 this.ctx.clearRect(0, 0, w, h);
                 this.ctx.fillStyle = '#22223b'; this.ctx.fillRect(0, 0, w, h);
 
+                if (!this.game || !this.game.humanPlayer) return;
+
                 const player = this.game.humanPlayer; // Renamed hPlayer to player
                 const bubblingVid = document.getElementById('bubbling-video');
                 const explosionVid = document.getElementById('explosion-video');
@@ -1338,19 +1437,29 @@
             // 2. Hide loading screen
             document.getElementById('loading-overlay').style.display = 'none';
 
-            // 3. Boot Game
+            // 3. Boot Game and Check Character Selection
             const gameConfig = { numAIs: 2 }; 
             const gameController = new GameController(gameConfig);
             const uiManager = new UIManager(gameController, window.GAME_ASSETS);
-            gameController.startGame();
             
-            const isHelp = window.location.href.includes('help=1');
-            if (isHelp) {
-                uiManager.showHelpModal();
-            }
+            const savedChar = getCookie('selectedCharacter');
+            
+            if (!savedChar) {
+                // Mandatory selection - pauses game start until user picks
+                uiManager.showCharacterSelect(true);
+            } else {
+                // Pre-selected - setup and start immediately
+                gameController.setupPlayers(savedChar);
+                gameController.startGame();
+                
+                const isHelp = window.location.href.includes('help=1');
+                if (isHelp) {
+                    uiManager.showHelpModal();
+                }
 
-            // Show the bag right away on round 1
-            uiManager.showBagModal();
+                // Show the bag right away on round 1
+                uiManager.showBagModal();
+            }
         };
 
     </script>
