@@ -243,7 +243,8 @@
                         <strong id="ui-brew-vp" style="color: #f5f5f5; display: none;">0</strong>
                         <span id="ui-brew-vp-icon" class="icon-small" style="display: none; margin-left: 5px; margin-right: 10px;"></span>
                         <strong id="ui-brew-value" style="color: gold;">0</strong>
-                        <span id="ui-brew-ruby" class="icon-small" style="display: none; margin-left: 5px; margin-right: 0;"></span>
+                        <strong id="ui-brew-ruby-val" style="color: #ff4444; display: none; margin-left: 8px;">0</strong>
+                        <span id="ui-brew-ruby" class="icon-small" style="display: none; margin-left: 3px; margin-right: 0;"></span>
                     </span>
                 </div>
                 <div class="status-box">
@@ -1319,6 +1320,37 @@
                 this.ctx.globalAlpha = 1.0; // Fully reset at the very end
             }
 
+            getProjectedRewards(player) {
+                let projectedVP = 0;
+                let projectedMoney = 0;
+                let projectedRuby = 0;
+
+                const trackSpace = TRACK_REWARDS[Math.min(player.currentBrewValue || 0, TRACK_REWARDS.length - 1)];
+                projectedVP += trackSpace.vp;
+                projectedMoney += trackSpace.money;
+                if (trackSpace.ruby) projectedRuby += 1;
+
+                // Project Purple (Moth) bonuses
+                const mothCount = player.cauldron.filter(c => c.type.id === 'PURPLE').length;
+                if (mothCount >= 3) projectedVP += 2;
+                else if (mothCount >= 1) projectedVP += 1;
+
+                // Project Black (Crow Skull) bonuses
+                const skullCount = player.cauldron.filter(c => c.type.id === 'BLACK').length;
+                if (skullCount >= 1) {
+                    projectedVP += 1;
+                    projectedRuby += 1;
+                }
+
+                // Project Green (Spider) bonuses
+                const len = player.cauldron.length;
+                if (len >= 1 && (player.cauldron[len-1].type.id === 'GREEN' || (len >= 2 && player.cauldron[len-2].type.id === 'GREEN'))) {
+                    projectedRuby += 1;
+                }
+
+                return { vp: projectedVP, money: projectedMoney, rubies: projectedRuby };
+            }
+
             updateFullUI() {
                 const human = this.game.humanPlayer;
                 if (!human) return;
@@ -1343,21 +1375,24 @@
                 document.getElementById('ui-bag-count').innerText = human.bag.length;
                 document.getElementById('ui-rat-tails').innerText = `${human.ratTails}`;
                 
-                const brewVal = human.currentBrewValue || 0;
-                const currentReward = TRACK_REWARDS[Math.min(brewVal, TRACK_REWARDS.length - 1)];
-                document.getElementById('ui-brew-value').innerText = currentReward.money;
+                const humanRewards = this.getProjectedRewards(human);
+                document.getElementById('ui-brew-value').innerText = humanRewards.money;
                 
                 const brewRubyEl = document.getElementById('ui-brew-ruby');
-                if (currentReward.ruby) {
-                    brewRubyEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}`;
+                const brewRubyValEl = document.getElementById('ui-brew-ruby-val');
+                if (humanRewards.rubies > 0) {
+                    brewRubyValEl.innerText = humanRewards.rubies > 1 ? humanRewards.rubies : '';
+                    brewRubyValEl.style.display = humanRewards.rubies > 1 ? 'inline-block' : 'none';
+                    brewRubyEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 3px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}`;
                 } else {
+                    brewRubyValEl.style.display = 'none';
                     brewRubyEl.style.display = 'none';
                 }
 
                 const brewVpEl = document.getElementById('ui-brew-vp');
                 const brewVpIconEl = document.getElementById('ui-brew-vp-icon');
-                if (currentReward.vp > 0) {
-                    brewVpEl.innerText = currentReward.vp;
+                if (humanRewards.vp > 0) {
+                    brewVpEl.innerText = humanRewards.vp;
                     brewVpEl.style.display = 'inline-block';
                     brewVpIconEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 10px; ${getUtilSpriteStyle('VP')}`;
                 } else {
@@ -1394,17 +1429,19 @@
                     const status = ai.exploded ? "EXPLODED!" : (ai.hasStopped ? "Finished" : "Brewing...");
                     const card = document.createElement('div'); card.className = 'ai-card';
                     
-                    const aiBrewVal = ai.currentBrewValue || 0;
-                    const aiReward = TRACK_REWARDS[Math.min(aiBrewVal, TRACK_REWARDS.length - 1)];
+                    const aiRewards = this.getProjectedRewards(ai);
                     const aiMood = getPlayerMood(ai);
                     const aiFaceStyle = getCharacterSpriteStyle(ai.character, aiMood);
                     
                     let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">Brew Value: `;
-                    if (aiReward.vp > 0) {
-                        brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${aiReward.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
+                    if (aiRewards.vp > 0) {
+                        brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${aiRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
                     }
-                    brewHtml += `<strong style="color: gold; margin-left: 5px;">${aiReward.money}</strong>`;
-                    if (aiReward.ruby) {
+                    brewHtml += `<strong style="color: gold; margin-left: 5px;">${aiRewards.money}</strong>`;
+                    if (aiRewards.rubies > 0) {
+                        if (aiRewards.rubies > 1) {
+                            brewHtml += `<span style="color: #ff4444; margin-left: 8px;">${aiRewards.rubies}</span>`;
+                        }
                         brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
                     }
                     brewHtml += `</div>`;
