@@ -422,7 +422,7 @@
             FLASK_FULL:  { x: 0.04, y: 0.24, w: 0.19, h: 0.38 }, 
             FLASK_EMPTY: { x: 0.24, y: 0.24, w: 0.19, h: 0.38 }, 
             RUBY:        { x: 0.44, y: 0.34, w: 0.13, h: 0.27 }, 
-            DROPLET:     { x: 0.58, y: 0.33, w: 0.10, h: 0.28 }, 
+            DROPLET:     { x: 0.57, y: 0.33, w: 0.11, h: 0.28 }, 
             RAT:         { x: 0.69, y: 0.38, w: 0.12, h: 0.21 }, 
             VP:          { x: 0.81, y: 0.34, w: 0.17, h: 0.27 }  
         };
@@ -1155,7 +1155,7 @@
                 let theta = 0;
                 
                 // Space 0 (The Droplet starting position) adjusted to the bg image
-                this.spiralSpaces.push({ x: centerX+w/33, y: centerY-h/80 });
+                this.spiralSpaces.push({ x: centerX+w/38, y: centerY-h/80 });
 
                 // Archimedean spiral formula: r = a + b*theta
                 const b = armDistance / (2 * Math.PI);
