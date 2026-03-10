@@ -335,7 +335,7 @@
 
     <div id="bag-modal" class="modal-overlay" style="z-index: 1005;">
         <div class="modal-content" style="max-width: 500px;">
-            <h2 id="bag-modal-title">🎒 What's in my bag?</h2>
+            <h2 id="bag-modal-title" style="display: flex; align-items: center; justify-content: center; gap: 10px;">What's in my bag?</h2>
             <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">
                 These are all the ingredient tokens you own, including those played this round and newly purchased ones.
             </p>
@@ -418,13 +418,14 @@
 
         // Utility Sprite Mappings updated for the new irregular layout
         const UTILS_MAP = {
-            FLASK_FULL:  { x: 0.00, y: 0.00, w: 0.20, h: 0.95 }, 
-            FLASK_EMPTY: { x: 0.20, y: 0.00, w: 0.20, h: 0.95 }, 
-            RUBY:        { x: 0.41, y: 0.05, w: 0.13, h: 0.40 }, 
-            COIN:        { x: 0.37, y: 0.44, w: 0.20, h: 0.55 },
-            DROPLET:     { x: 0.56, y: 0.12, w: 0.12, h: 0.50 }, 
-            RAT:         { x: 0.68, y: 0.15, w: 0.14, h: 0.50 }, 
-            VP:          { x: 0.82, y: 0.08, w: 0.17, h: 0.50 }  
+            FLASK_FULL  : { x: 0.00, y: 0.02, w: 0.16, h: 0.47 }, 
+            FLASK_EMPTY : { x: 0.17, y: 0.01, w: 0.16, h: 0.47 }, 
+            RUBY        : { x: 0.35, y: 0.06, w: 0.11, h: 0.31 }, 
+            COIN        : { x: 0.48, y: 0.02, w: 0.16, h: 0.44 }, 
+            SACK        : { x: 0.34, y: 0.54, w: 0.13, h: 0.35 }, 
+            DROPLET     : { x: 0.51, y: 0.54, w: 0.08, h: 0.34 }, 
+            RAT         : { x: 0.62, y: 0.54, w: 0.09, h: 0.33 }, 
+            VP          : { x: 0.73, y: 0.53, w: 0.14, h: 0.36 }
         };
 
         // 4x4 Grid Constants for Characters
@@ -1060,9 +1061,9 @@
                 
                 const titleEl = document.getElementById('bag-modal-title');
                 if (p.isHuman) {
-                    titleEl.innerText = "🎒 What's in my bag?";
+                    titleEl.innerHTML = `<span style="width: 30px; height: 30px; display: inline-block; ${getUtilSpriteStyle('SACK')}"></span> What's in my bag?`;
                 } else {
-                    titleEl.innerText = `🎒 ${p.name}'s bag (Debug)`;
+                    titleEl.innerHTML = `<span style="width: 30px; height: 30px; display: inline-block; ${getUtilSpriteStyle('SACK')}"></span> ${p.name}'s bag (Debug)`;
                 }
 
                 // Sort inventory for better visualization (by type, then value)
@@ -1195,7 +1196,7 @@
                 const canAffordBag = h.rubies >= 1;
                 bagEl.className = `shop-item ${!canAffordBag ? 'disabled' : ''}`;
                 bagEl.innerHTML = `
-                    <div style="font-size: 2rem; display: flex; align-items: center; justify-content: center; height: 35px; margin-bottom: 5px;">🎒</div>
+                    <div style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; ${getUtilSpriteStyle('SACK')}"></div>
                     <div style="font-size: 0.8em; font-weight: bold;">View Bag</div>
                     <div style="font-size: 0.9em; color: #ff4444;">Cost: 1 Ruby</div>
                     <div class="tooltip">Peek inside your bag to see all your tokens (played, unplayed, and newly purchased).</div>
