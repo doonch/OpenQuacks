@@ -1349,7 +1349,7 @@
                 let theta = 0;
                 
                 // Space 0 (The Droplet starting position) adjusted to the bg image
-                this.spiralSpaces.push({ x: centerX+w/38, y: centerY-h/80 });
+                this.spiralSpaces.push({ x: centerX + baseSize / 23, y: centerY - baseSize / 80 });
 
                 // Archimedean spiral formula: r = a + b*theta
                 const b = armDistance / (2 * Math.PI);
