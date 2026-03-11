@@ -1440,6 +1440,29 @@
                     this.ctx.fillRect(sackX, sackY, sackSize, sackSize);
                 }
 
+                // Draw bag count text over the sack
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.font = `bold ${sackSize * 0.35}px Arial`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'top';
+                
+                // Add text shadow for readability
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                this.ctx.shadowOffsetX = 1;
+                this.ctx.shadowOffsetY = 1;
+                this.ctx.shadowBlur = 3;
+                
+                // Shifted slightly down to visually center on the "bulge" of the sack
+                this.ctx.fillText(player.bag.length, sackX + sackSize / 2, sackY + sackSize * 0.55);
+                
+                // Reset shadow and text alignment for subsequent drawings
+                this.ctx.shadowColor = 'transparent';
+                this.ctx.shadowOffsetX = 0;
+                this.ctx.shadowOffsetY = 0;
+                this.ctx.shadowBlur = 0;
+                this.ctx.textAlign = 'left'; 
+                this.ctx.textBaseline = 'alphabetic';
+
                 // 4. Draw Placed Chips (with Animation, Fade-In and Global Fade-Out)
                 player.cauldron.forEach(chip => {
                     const pos = this.spiralSpaces[chip.spaceIndex];
