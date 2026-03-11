@@ -189,7 +189,7 @@
         <!-- Main Board Area -->
         <div id="main-board" class="panel">
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>Main Board <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Phase: Brewing)</span></span>
+                <span>Day <span id="ui-round">1</span> of 9 <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Brewing)</span></span>
                 <div style="display: flex; gap: 5px; margin-left: auto;">
                     <button id="btn-settings" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #6a6e8f; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="Settings">⚙️</button>
                     <button id="btn-help" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #00b4d8; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="How to play">?</button>
@@ -198,10 +198,6 @@
             <div class="board-sections">
                 <div class="board-section" id="human-character">
                     <div id="ui-human-face" style="width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5);"></div>
-                </div>
-                <div class="board-section" id="round-track">
-                    <h3>Round Track</h3>
-                    <p style="margin-top: 10px;">Round: <span id="ui-round">1</span> / 9</p>
                 </div>
                 <div class="board-section" id="fortune-teller">
                     <h3>Fortune Teller</h3>
@@ -212,8 +208,6 @@
 
         <!-- Side Panel (Players & Controls) -->
         <div id="side-panel" class="panel">
-            <div class="panel-title">Players & Controls</div>
-            
             <div class="human-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                     <h3 id="ui-player-status-title" style="color: var(--accent); margin: 0;">My Status</h3>
@@ -293,8 +287,8 @@
     <div id="bonus-die-modal" class="modal-overlay" style="z-index: 1006;">
         <div class="modal-content">
             <h2>🎲 Bonus Die Roll! 🎲</h2>
-            <p>You brewed the best potion this round!</p>
-            <div id="bonus-die-result" style="font-size: 1.5rem; margin: 20px 0; color: var(--accent); font-weight: bold;"></div>
+            <p id="bonus-die-desc">You brewed the best potion this round!</p>
+            <div id="bonus-die-result" style="font-size: 1.5rem; margin: 20px 0; color: var(--accent); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 10px;"></div>
             <button id="btn-bonus-die-ok" style="background-color: #4caf50;">Awesome!</button>
         </div>
     </div>
@@ -489,7 +483,9 @@
         }
 
         // --- Helper to determine the mood of a player based on state ---
-        function getPlayerMood(player, isGameOver = false, isWinner = false) {
+        function getPlayerMood(player, isGameOver, isWinner) {
+            isGameOver = isGameOver || false;
+            isWinner = isWinner || false;
             if (isGameOver) return isWinner ? 'TRIUMPHANT' : 'DISAPPOINTMENT';
             if (player.exploded) return 'DISAPPOINTMENT';
             if (player.hasStopped) return 'SMIRK';
@@ -531,11 +527,11 @@
         ];
 
         const BONUS_DIE_FACES = [
-            { text: "1 VP!", apply: (p) => p.victoryPoints += 1 },
-            { text: "2 VP!", apply: (p) => p.victoryPoints += 2 },
-            { text: "1 Ruby!", apply: (p) => p.rubies += 1 },
-            { text: "1 Droplet step!", apply: (p) => p.dropletPosition += 1 },
-            { text: "1 Pumpkin Token!", apply: (p) => p.inventory.push({ type: INGREDIENTS.ORANGE, value: 1 }) }
+            { text: "1 VP!", icon: "VP", apply: (p) => p.victoryPoints += 1 },
+            { text: "2 VP!", icon: "VP", apply: (p) => p.victoryPoints += 2 },
+            { text: "1 Ruby!", icon: "RUBY", apply: (p) => p.rubies += 1 },
+            { text: "1 Droplet step!", icon: "DROPLET", apply: (p) => p.dropletPosition += 1 },
+            { text: "1 Pumpkin!", isChip: true, typeId: "ORANGE", value: 1, apply: (p) => p.inventory.push({ type: INGREDIENTS.ORANGE, value: 1 }) }
         ];
 
         const INGREDIENT_BOOKS_SET_1 = {
@@ -582,10 +578,10 @@
         /**
          * 3. GAME LOGIC & STATE
          */
-        class Player {
-            constructor(name, isHuman, game, charName = 'CHILD') {
+        class QuacksPlayer {
+            constructor(name, isHuman, game, charName) {
                 this.name = name; this.isHuman = isHuman; this.game = game;
-                this.character = charName;
+                this.character = charName || 'CHILD';
                 this.victoryPoints = 0; this.rubies = 0; this.money = 0;
                 this.flaskActive = true; this.dropletPosition = 0; this.ratTails = 0;
                 this.inventory = []; this.bag = []; this.cauldron = [];
@@ -618,7 +614,8 @@
                 if (this.money >= cost) { this.money -= cost; this.inventory.push({ type: t, value: v }); return true; } return false;
             }
 
-            drawChip(forcedIndex = null) {
+            drawChip(forcedIndex) {
+                forcedIndex = forcedIndex !== undefined ? forcedIndex : null;
                 if (this.hasStopped || this.exploded || this.bag.length === 0) return;
 
                 const drawIndex = forcedIndex !== null ? forcedIndex : Math.floor(Math.random() * this.bag.length);
@@ -657,15 +654,16 @@
             }
         }
 
-        class GameController {
+        class QuacksGameController {
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; this.books = INGREDIENT_BOOKS_SET_1;
             }
 
-            setupPlayers(humanCharName = 'WITCH') {
+            setupPlayers(humanCharName) {
+                humanCharName = humanCharName || 'WITCH';
                 this.players = []; // Reset players list
-                this.humanPlayer = new Player('You', true, this, humanCharName);
+                this.humanPlayer = new QuacksPlayer('You', true, this, humanCharName);
                 this.players.push(this.humanPlayer);
                 
                 const allChars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS'];
@@ -678,7 +676,7 @@
                 }
                 
                 for(let i=1; i<=this.config.numAIs; i++) {
-                    this.players.push(new Player(`AI ${i}`, false, this, availableChars[i-1]));
+                    this.players.push(new QuacksPlayer(`AI ${i}`, false, this, availableChars[i-1]));
                 }
             }
 
@@ -743,19 +741,22 @@
                 }
 
                 let humanRolled = false;
-                let humanResult = null;
+                let humanResultFace = null;
+                let humanMoney = 0;
 
                 eligiblePlayers.forEach(p => {
                     const face = BONUS_DIE_FACES[Math.floor(Math.random() * BONUS_DIE_FACES.length)];
                     face.apply(p);
                     if (p.isHuman) {
                         humanRolled = true;
-                        humanResult = face.text;
+                        humanResultFace = face;
+                        const trackSpace = TRACK_REWARDS[Math.min(p.currentBrewValue || 0, TRACK_REWARDS.length - 1)];
+                        humanMoney = trackSpace.money;
                     }
                 });
 
                 if (humanRolled && this.uiManager) {
-                    this.uiManager.showBonusDieModal(humanResult);
+                    this.uiManager.showBonusDieModal(humanResultFace, humanMoney);
                 } else {
                     this.continueEvaluationPhase();
                 }
@@ -806,7 +807,7 @@
         /**
          * 4. UI & RENDERING ENGINE
          */
-        class UIManager {
+        class QuacksUIManager {
             constructor(gameController, assets) {
                 this.game = gameController; this.game.uiManager = this;
                 this.assets = assets;
@@ -995,7 +996,8 @@
                 document.getElementById('debug-draw-modal').style.display = 'flex';
             }
 
-            showCharacterSelect(isMandatory = false) {
+            showCharacterSelect(isMandatory) {
+                isMandatory = isMandatory !== undefined ? isMandatory : false;
                 const grid = document.getElementById('char-select-grid');
                 grid.innerHTML = '';
                 const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS'];
@@ -1125,8 +1127,17 @@
                 document.getElementById('btn-help-next').disabled = this.helpSlideIndex === slides.length - 1;
             }
 
-            showBonusDieModal(resultText) {
-                document.getElementById('bonus-die-result').innerText = resultText;
+            showBonusDieModal(face, money) {
+                document.getElementById('bonus-die-desc').innerHTML = `You brewed the best potion this round! (${money} <span style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; ${getUtilSpriteStyle('COIN')}"></span>)`;
+                
+                let iconHtml = '';
+                if (face.isChip) {
+                    iconHtml = `<div class="chip-icon" style="width: 36px; height: 36px; ${getChipSpriteStyle(face.typeId, face.value)}"></div>`;
+                } else {
+                    iconHtml = `<div style="width: 30px; height: 40px; ${getUtilSpriteStyle(face.icon)}"></div>`;
+                }
+
+                document.getElementById('bonus-die-result').innerHTML = `${iconHtml}<span>${face.text}</span>`;
                 document.getElementById('bonus-die-modal').style.display = 'flex';
                 this.updateFullUI();
             }
@@ -1176,7 +1187,8 @@
                 document.getElementById('final-scores').innerHTML = scores; document.getElementById('game-over-modal').style.display = 'flex';
             }
 
-            showBagModal(player = null) {
+            showBagModal(player) {
+                player = player !== undefined ? player : null;
                 const p = player || this.game.humanPlayer;
                 const container = document.getElementById('bag-items');
                 container.innerHTML = '';
@@ -1543,7 +1555,7 @@
 
                         // Fade-in over the first 300ms
                         const chipAlpha = Math.min(1.0, Math.max(0, age / 300.0));
-                        this.ctx.globalAlpha = elementAlpha * chipAlpha; // Combine safely
+                        this.ctx.globalAlpha = Number((elementAlpha * chipAlpha).toFixed(3)); // Combine safely
 
                         const cDef = CHIP_SPRITE_MAP[`${chip.type.id}_${chip.value}`];
                         const imgChips = this.assets.CHIPS;
@@ -1613,7 +1625,7 @@
                 const humanMood = getPlayerMood(human);
                 document.getElementById('ui-human-face').style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5); ${getCharacterSpriteStyle(human.character, humanMood)}`;
 
-                document.getElementById('ui-phase').innerText = `(Phase: ${this.game.phase})`;
+                document.getElementById('ui-phase').innerText = `(${this.game.phase})`;
                 document.getElementById('ui-round').innerText = this.game.round;
                 if (this.game.currentFortuneCard) document.getElementById('ui-fortune-text').innerText = `"${this.game.currentFortuneCard.text}"`;
 
@@ -1729,14 +1741,14 @@
 
             // 3. Boot Game and Check Character Selection
             const gameConfig = { numAIs: 2 }; 
-            const gameController = new GameController(gameConfig);
-            const uiManager = new UIManager(gameController, window.GAME_ASSETS);
+            const gameController = new QuacksGameController(gameConfig);
+            const appUIManager = new QuacksUIManager(gameController, window.GAME_ASSETS);
             
             const savedChar = getCookie('selectedCharacter');
             
             if (!savedChar) {
                 // Mandatory selection - pauses game start until user picks
-                uiManager.showCharacterSelect(true);
+                appUIManager.showCharacterSelect(true);
             } else {
                 // Pre-selected - setup and start immediately
                 gameController.setupPlayers(savedChar);
@@ -1745,12 +1757,12 @@
                 const forceHelp = window.location.href.includes('help=1');
                 const hasSeenHelp = getCookie('hasSeenHelp');
                 if (forceHelp || !hasSeenHelp) {
-                    uiManager.showHelpModal();
+                    appUIManager.showHelpModal();
                     setCookie('hasSeenHelp', 'true', 365);
                 }
 
                 // Show the bag right away on round 1
-                uiManager.showBagModal();
+                appUIManager.showBagModal();
             }
         };
 
