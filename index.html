@@ -133,8 +133,20 @@
         
         button.stop-btn { background-color: #4a4e69; }
         button.stop-btn:hover:not(:disabled) { background-color: #6a6e8f; }
-        button.flask-btn { background-color: #00b4d8; padding: 5px 10px; font-size: 0.8rem; flex: 0 0 auto; }
-        button.flask-btn:hover:not(:disabled) { background-color: #0096c7; }
+
+        #btn-toggle-values {
+            position: absolute; top: 10px; left: 10px; z-index: 10; 
+            background: rgba(0,0,0,0.5); border: 2px solid #4a4e69; 
+            border-radius: 50%; width: 40px; height: 40px; 
+            font-size: 1.5rem; display: flex; align-items: center; 
+            justify-content: center; padding: 0; cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5); color: white;
+            transition: all 0.2s;
+        }
+        #btn-toggle-values:hover {
+            background: rgba(0,0,0,0.8);
+            transform: scale(1.1);
+        }
 
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
@@ -280,6 +292,7 @@
 
         <!-- Cauldron Canvas -->
         <div id="cauldron-wrapper">
+            <button id="btn-toggle-values" title="Toggle Track Values">🧐</button>
             <canvas id="cauldron-canvas"></canvas>
             <video id="explosion-video" src="assets/explosion.mov" playsinline preload="auto" style="display: none;"></video>
             <video id="bubbling-video" src="assets/cauldron_bubble1.mov" playsinline preload="auto" loop style="display: none;"></video>
@@ -845,6 +858,7 @@
                 this.wrapper = document.getElementById('cauldron-wrapper');
                 this.spiralSpaces = []; this.shopCart = [];
                 this.helpSlideIndex = 0;
+                this.showTrackValues = false;
                 
                 this.isDebug = window.location.href.includes('debug=1');
 
@@ -987,6 +1001,11 @@
                         this.helpSlideIndex++;
                         this.renderHelpSlide();
                     }
+                });
+
+                document.getElementById('btn-toggle-values').addEventListener('click', () => {
+                    this.showTrackValues = !this.showTrackValues;
+                    this.renderCanvas();
                 });
 
                 document.getElementById('btn-play-again').addEventListener('click', () => {
@@ -1615,6 +1634,57 @@
                             this.ctx.fillText(chip.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
                         }
                     });
+
+                    // 5. Draw Track Values (if toggled)
+                    if (this.showTrackValues) {
+                        this.ctx.save();
+                        this.ctx.globalAlpha = elementAlpha;
+                        this.ctx.textBaseline = 'middle';
+                        const fontSize = Math.max(10, baseSize * 0.02);
+                        this.ctx.font = `bold ${fontSize}px Arial`;
+                        this.ctx.textAlign = 'center';
+
+                        this.spiralSpaces.forEach((pos, idx) => {
+                            if (idx >= TRACK_REWARDS.length) return;
+                            const reward = TRACK_REWARDS[idx];
+                            if (reward.money === 0 && reward.vp === 0) return;
+
+                            const hasVp = reward.vp > 0;
+                            const moneyText = `${reward.money}`;
+                            const vpText = `${reward.vp}`;
+                            
+                            const mWidth = this.ctx.measureText(moneyText).width;
+                            const vpWidth = hasVp ? this.ctx.measureText(vpText).width : 0;
+                            const tw = Math.max(mWidth, vpWidth) + 12;
+                            const th = hasVp ? (fontSize * 2 + 10) : (fontSize + 8);
+                            const rx = pos.x - tw/2;
+                            const ry = pos.y - th/2;
+
+                            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(rx + 6, ry);
+                            this.ctx.lineTo(rx + tw - 6, ry);
+                            this.ctx.quadraticCurveTo(rx + tw, ry, rx + tw, ry + 6);
+                            this.ctx.lineTo(rx + tw, ry + th - 6);
+                            this.ctx.quadraticCurveTo(rx + tw, ry + th, rx + tw - 6, ry + th);
+                            this.ctx.lineTo(rx + 6, ry + th);
+                            this.ctx.quadraticCurveTo(rx, ry + th, rx, ry + th - 6);
+                            this.ctx.lineTo(rx, ry + 6);
+                            this.ctx.quadraticCurveTo(rx, ry, rx + 6, ry);
+                            this.ctx.fill();
+
+                            if (hasVp) {
+                                this.ctx.fillStyle = 'gold';
+                                this.ctx.fillText(moneyText, pos.x, pos.y - fontSize * 0.45);
+                                this.ctx.fillStyle = '#f5f5f5';
+                                this.ctx.fillText(vpText, pos.x, pos.y + fontSize * 0.55);
+                            } else {
+                                this.ctx.fillStyle = 'gold';
+                                this.ctx.fillText(moneyText, pos.x, pos.y);
+                            }
+                        });
+                        this.ctx.restore();
+                    }
                 }
                 
                 this.ctx.restore(); // Safely wipe context state so Safari doesn't carry ghost alphas over
