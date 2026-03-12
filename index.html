@@ -461,8 +461,8 @@
             VP          : { x: 0.73, y: 0.53, w: 0.14, h: 0.36 }
         };
 
-        // 6x4 Grid Constants for Characters
-        const CHAR_ROW = { 'WIZARD': 0, 'WITCH': 1, 'MONK': 2, 'CHILD': 3, 'PRINCESS': 4, 'VOODOO_LADY': 5 };
+        // 8x4 Grid Constants for Characters
+        const CHAR_ROW = { 'WIZARD': 0, 'WITCH': 1, 'MONK': 2, 'CHILD': 3, 'PRINCESS': 4, 'VOODOO_LADY': 5, 'BARD': 6, 'GARDENER': 7 };
         const MOOD_COL = { 'SMIRK': 0, 'CONCERN': 1, 'DISAPPOINTMENT': 2, 'TRIUMPHANT': 3 };
 
         class AssetManager {
@@ -503,12 +503,12 @@
         function getCharacterSpriteStyle(charName, moodName) {
             const row = CHAR_ROW[charName] || 0;
             const col = MOOD_COL[moodName] || 0;
-            // For a 6x4 grid, the background size is 400% (cols) by 600% (rows)
+            // For an 8x4 grid, the background size is 400% (cols) by 800% (rows)
             // X position offsets are 0, 33.33%, 66.66%, 100%
-            // Y position offsets are 0, 20%, 40%, 60%, 80%, 100%
+            // Y position offsets are 0, 14.28%, 28.57%, ..., 100%
             const x = col * 33.3333;
-            const y = row * 20;
-            return `background-image: url('${ASSET_PATHS.CHARACTERS}'); background-size: 400% 600%; background-position: ${x}% ${y}%; background-repeat: no-repeat;`;
+            const y = row * 14.2857;
+            return `background-image: url('${ASSET_PATHS.CHARACTERS}'); background-size: 400% 800%; background-position: ${x}% ${y}%; background-repeat: no-repeat;`;
         }
 
         // --- Helper to determine the mood of a player based on state ---
@@ -695,7 +695,7 @@
                 this.humanPlayer = new QuacksPlayer('You', true, this, humanCharName);
                 this.players.push(this.humanPlayer);
                 
-                const allChars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY'];
+                const allChars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY', 'BARD', 'GARDENER'];
                 const availableChars = allChars.filter(c => c !== humanCharName);
                 
                 // Randomly shuffle available characters for AIs
@@ -1029,7 +1029,7 @@
                 isMandatory = isMandatory !== undefined ? isMandatory : false;
                 const grid = document.getElementById('char-select-grid');
                 grid.innerHTML = '';
-                const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY'];
+                const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY', 'BARD', 'GARDENER'];
                 
                 chars.forEach(charName => {
                     const btn = document.createElement('div');
