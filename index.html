@@ -133,6 +133,8 @@
         
         button.stop-btn { background-color: #4a4e69; }
         button.stop-btn:hover:not(:disabled) { background-color: #6a6e8f; }
+        button.flask-btn { background-color: #00b4d8; padding: 5px 10px; font-size: 0.8rem; flex: 0 0 auto; }
+        button.flask-btn:hover:not(:disabled) { background-color: #0096c7; }
 
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
@@ -339,7 +341,7 @@
                 <span style="display: flex; align-items: center;">Available Money: <strong id="shop-money" style="color: gold; font-size: 1.2rem; margin-left: 5px;">0</strong><span id="shop-money-icon"></span></span>
                 <span style="display: flex; align-items: center;">
                     Rubies: <strong id="shop-rubies" style="color: #ff4444; font-size: 1.2rem; margin-left: 5px; margin-right: 5px;">0</strong>
-                    <span id="ui-icon-ruby" class="icon-small"></span> 
+                    <span id="shop-ruby-icon" class="icon-small"></span> 
                 </span>
             </div>
             <p style="margin-bottom: 10px; font-size: 0.9em;">Buy up to 2 ingredients of different colors. Ruby items have no limits!</p>
@@ -1284,8 +1286,10 @@
 
             renderShopUI() {
                 const h = this.game.humanPlayer;
-                document.getElementById('shop-money').innerText = h.money; document.getElementById('shop-rubies').innerText = h.rubies;
+                document.getElementById('shop-money').innerText = h.money; 
+                document.getElementById('shop-rubies').innerText = h.rubies;
                 document.getElementById('shop-money-icon').style.cssText = `width: 24px; height: 24px; display: inline-block; margin-left: 5px; ${getUtilSpriteStyle('COIN')}`;
+                document.getElementById('shop-ruby-icon').style.cssText = `width: 24px; height: 24px; display: inline-block; ${getUtilSpriteStyle('RUBY')}`;
 
                 const shopItems = document.getElementById('shop-items'); shopItems.innerHTML = '';
                 const cartColors = this.shopCart.map(c => c.type.id);
