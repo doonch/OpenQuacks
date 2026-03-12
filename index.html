@@ -133,8 +133,6 @@
         
         button.stop-btn { background-color: #4a4e69; }
         button.stop-btn:hover:not(:disabled) { background-color: #6a6e8f; }
-        button.flask-btn { background-color: #00b4d8; padding: 5px 10px; font-size: 0.8rem; flex: 0 0 auto; }
-        button.flask-btn:hover:not(:disabled) { background-color: #0096c7; }
 
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
@@ -230,6 +228,11 @@
                 <div class="board-section" id="human-character">
                     <div id="ui-human-face" style="width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5);"></div>
                 </div>
+                <div class="board-section" id="flask-section" style="justify-content: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div id="ui-flask-icon" style="width: 50px; height: 70px; transition: all 0.2s;" title="Flask"></div>
+                    </div>
+                </div>
                 <div class="board-section" id="fortune-teller">
                     <h3>Fortune Teller</h3>
                     <p id="ui-fortune-text">Drawing card...</p>
@@ -245,13 +248,6 @@
                     <span id="ui-my-vp" style="color: var(--text-light); font-weight: bold;">0 VP</span>
                 </div>
                 
-                <div class="status-box">
-                    <div style="display: flex; align-items: center; gap: 5px;">
-                        <div id="ui-flask-icon" style="width: 25px; height: 35px;"></div>
-                        <span>Flask</span>
-                    </div>
-                    <button id="btn-flask" class="flask-btn" disabled style="display: none;">Use</button>
-                </div>
                 <div class="status-box">
                     <span>Brew Value:</span>
                     <span style="display: flex; align-items: center;">
@@ -960,7 +956,7 @@
                 document.getElementById('btn-stop').addEventListener('click', () => {
                     this.game.humanPlayer.hasStopped = true; this.updateFullUI(); this.game.checkBrewingPhaseEnd();
                 });
-                document.getElementById('btn-flask').addEventListener('click', () => { if(this.game.humanPlayer.useFlask()) this.updateFullUI(); });
+                document.getElementById('ui-flask-icon').addEventListener('click', () => { if(this.game.humanPlayer.useFlask()) this.updateFullUI(); });
 
                 document.getElementById('btn-choose-vp').addEventListener('click', () => { this.game.humanPlayer.victoryPoints += this.game.humanPlayer.roundVP; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
                 document.getElementById('btn-choose-money').addEventListener('click', () => { this.game.humanPlayer.money += this.game.humanPlayer.roundMoney; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
@@ -1701,16 +1697,18 @@
                 document.getElementById('btn-draw').disabled = !canDraw;
                 document.getElementById('btn-stop').disabled = human.exploded || human.hasStopped; // Uncoupled from canDraw
 
-                const flaskBtn = document.getElementById('btn-flask');
+                const flaskIcon = document.getElementById('ui-flask-icon');
                 const lastChip = human.cauldron[human.cauldron.length - 1];
                 const canFlask = human.flaskActive && !human.exploded && !human.hasStopped && human.cauldron.length > 0 && lastChip && lastChip.type.id === 'WHITE';
-                flaskBtn.disabled = !canFlask;
-                flaskBtn.innerText = "Use";
-                flaskBtn.style.display = canFlask ? 'inline-block' : 'none';
-
-                // Apply Sprite UI Icons
-                document.getElementById('ui-flask-icon').style.cssText = `width: 25px; height: 35px; ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
-                document.getElementById('ui-icon-ruby').style.cssText = `width: 20px; height: 20px; display: inline-block; ${getUtilSpriteStyle('RUBY')}`;
+                
+                // Apply Sprite UI Icons & Interactivity
+                // Use rotateY to create a flip effect, and specify transition properties explicitly to avoid background-position swiping
+                let flipDeg = human.flaskActive ? '0deg' : '180deg';
+                let transformStyle = `transform: rotateY(${flipDeg})${canFlask ? ' scale(1.05)' : ''};`;
+                let filterStyle = canFlask ? 'filter: drop-shadow(0 0 8px #00b4d8);' : '';
+                
+                flaskIcon.style.cssText = `width: 50px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
+                flaskIcon.title = canFlask ? "Click to use Flask and return the last Boomberry to your bag!" : (!human.flaskActive ? "Flask is empty." : "Can only be used immediately after drawing a Boomberry.");
 
                 const aiListEl = document.getElementById('ai-list'); aiListEl.innerHTML = ''; 
                 this.game.players.filter(p => !p.isHuman).forEach(ai => {
