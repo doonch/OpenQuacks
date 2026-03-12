@@ -232,7 +232,7 @@
                 </div>
                 <div class="board-section" id="flask-section" style="justify-content: center;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <div id="ui-flask-icon" style="width: 50px; height: 70px; transition: all 0.2s;" title="Flask"></div>
+                        <div id="ui-flask-icon" style="width: 60px; height: 70px; transition: all 0.2s;" title="Flask"></div>
                     </div>
                 </div>
                 <div class="board-section" id="fortune-teller">
@@ -1711,7 +1711,7 @@
                 let transformStyle = `transform: rotateY(${flipDeg})${canFlask ? ' scale(1.05)' : ''};`;
                 let filterStyle = canFlask ? 'filter: drop-shadow(0 0 8px #00b4d8);' : '';
                 
-                flaskIcon.style.cssText = `width: 50px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
+                flaskIcon.style.cssText = `width: 60px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
                 flaskIcon.title = canFlask ? "Click to use Flask and return the last Boomberry to your bag!" : (!human.flaskActive ? "Flask is empty." : "Can only be used immediately after drawing a Boomberry.");
 
                 const aiListEl = document.getElementById('ai-list'); aiListEl.innerHTML = ''; 
