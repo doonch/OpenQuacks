@@ -108,20 +108,6 @@
         
         canvas { display: block; }
 
-        .human-section { 
-            display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;
-        }
-        
-        .status-box {
-            background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 8px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .danger-text { color: #ff4444 !important; font-weight: bold; }
-        .safe-text { color: #f5f5f5; }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
-        
         button {
             flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 1rem;
             font-weight: bold; cursor: pointer; transition: all 0.2s;
@@ -130,9 +116,6 @@
         button:hover:not(:disabled) { background-color: #ff5c77; transform: translateY(-2px); }
         button:active:not(:disabled) { transform: translateY(0); }
         button:disabled { background-color: #444; color: #888; cursor: not-allowed; transform: none; }
-        
-        button.stop-btn { background-color: #4a4e69; }
-        button.stop-btn:hover:not(:disabled) { background-color: #6a6e8f; }
 
         #btn-toggle-values {
             position: absolute; top: 10px; left: 10px; z-index: 10; 
@@ -292,37 +275,7 @@
 
         <!-- Side Panel (Players & Controls) -->
         <div id="side-panel" class="panel">
-            <div class="human-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <h3 id="ui-player-status-title" style="color: var(--accent); margin: 0;">My Status</h3>
-                    <span id="ui-my-vp" style="color: var(--text-light); font-weight: bold;">0 VP</span>
-                </div>
-                
-                <div class="status-box">
-                    <span>Brew Value:</span>
-                    <span style="display: flex; align-items: center;">
-                        <strong id="ui-brew-vp" style="color: #f5f5f5; display: none;">0</strong>
-                        <span id="ui-brew-vp-icon" class="icon-small" style="display: none; margin-left: 5px; margin-right: 10px;"></span>
-                        <strong id="ui-brew-value" style="color: gold;">0</strong>
-                        <span id="ui-brew-coin" class="icon-small" style="margin-left: 3px;"></span>
-                        <strong id="ui-brew-ruby-val" style="color: #ff4444; display: none; margin-left: 8px;">0</strong>
-                        <span id="ui-brew-ruby" class="icon-small" style="display: none; margin-left: 3px; margin-right: 0;"></span>
-                    </span>
-                </div>
-                <div class="status-box">
-                    <span>Boomberries:</span>
-                    <strong id="ui-white-value" class="safe-text">0 / 7</strong>
-                </div>
-
-                <div class="btn-group">
-                    <button id="btn-draw" title="Add one more random ingredient from your bag.">Draw</button>
-                    <button id="btn-stop" class="stop-btn" title="Finish brewing, and sell your potion for the current brew value.">Stop</button>
-                </div>
-            </div>
-
-            <hr style="border-color: var(--panel-border); margin: 10px 0 20px 0;">
-            
-            <h3 style="color: var(--text-light); margin-bottom: 10px; font-size: 1.1rem;">Players</h3>
+            <div class="panel-title">Players</div>
             <div id="player-list"></div>
         </div>
 
@@ -958,9 +911,10 @@
             }
 
             async handlePlayerDraw(e) {
-                if (document.getElementById('btn-draw').disabled) return;
+                const canDraw = !this.game.humanPlayer.exploded && !this.game.humanPlayer.hasStopped && this.game.humanPlayer.bag.length > 0;
+                if (!canDraw) return;
 
-                if (this.isDebug && e.shiftKey) {
+                if (this.isDebug && e && e.shiftKey) {
                     this.showDebugDrawModal();
                     return;
                 }
@@ -982,7 +936,6 @@
 
             bindEvents() {
                 window.addEventListener('resize', () => this.handleResize());
-                document.getElementById('btn-draw').addEventListener('click', (e) => this.handlePlayerDraw(e));
 
                 // Make canvas Sack clickable
                 this.canvas.addEventListener('click', (e) => {
@@ -1019,10 +972,12 @@
                     
                     const mouseX = (e.clientX - rect.left) * scaleX;
                     const mouseY = (e.clientY - rect.top) * scaleY;
+                    
+                    const canDraw = !this.game.humanPlayer.exploded && !this.game.humanPlayer.hasStopped && this.game.humanPlayer.bag.length > 0;
 
                     if (mouseX >= sackX && mouseX <= sackX + sackSize &&
                         mouseY >= sackY && mouseY <= sackY + sackSize && 
-                        !document.getElementById('btn-draw').disabled) {
+                        canDraw) {
                         this.canvas.style.cursor = 'pointer';
                     } else {
                         this.canvas.style.cursor = 'default';
@@ -1031,10 +986,6 @@
 
                 this.canvas.addEventListener('mouseleave', () => {
                     this.canvas.style.cursor = 'default';
-                });
-
-                document.getElementById('btn-stop').addEventListener('click', () => {
-                    this.game.humanPlayer.hasStopped = true; this.updateFullUI(); this.game.checkBrewingPhaseEnd();
                 });
                 
                 document.getElementById('btn-sell-potion').addEventListener('click', () => {
@@ -1874,51 +1825,10 @@
                 const humanMood = getPlayerMood(human);
                 document.getElementById('ui-human-face').style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5); ${getCharacterSpriteStyle(human.character, humanMood)}`;
 
-                document.getElementById('ui-phase').innerText = `(${this.game.phase})`;
+                document.getElementById('ui-phase').innerText = `(Phase: ${this.game.phase})`;
                 document.getElementById('ui-round').innerText = this.game.round;
                 if (this.game.currentFortuneCard) document.getElementById('ui-fortune-text').innerText = `"${this.game.currentFortuneCard.text}"`;
 
-                document.getElementById('ui-my-vp').innerText = `${human.victoryPoints} VP`;
-                
-                const humanRewards = this.getProjectedRewards(human);
-                document.getElementById('ui-brew-value').innerText = humanRewards.money;
-                document.getElementById('ui-brew-coin').style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 3px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}`;
-                
-                const brewRubyEl = document.getElementById('ui-brew-ruby');
-                const brewRubyValEl = document.getElementById('ui-brew-ruby-val');
-                if (humanRewards.rubies > 0) {
-                    brewRubyValEl.innerText = humanRewards.rubies > 1 ? humanRewards.rubies : '';
-                    brewRubyValEl.style.display = humanRewards.rubies > 1 ? 'inline-block' : 'none';
-                    brewRubyEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 3px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}`;
-                } else {
-                    brewRubyValEl.style.display = 'none';
-                    brewRubyEl.style.display = 'none';
-                }
-
-                const brewVpEl = document.getElementById('ui-brew-vp');
-                const brewVpIconEl = document.getElementById('ui-brew-vp-icon');
-                if (humanRewards.vp > 0) {
-                    brewVpEl.innerText = humanRewards.vp;
-                    brewVpEl.style.display = 'inline-block';
-                    brewVpIconEl.style.cssText = `width: 20px; height: 20px; display: inline-block; margin-left: 5px; margin-right: 10px; ${getUtilSpriteStyle('VP')}`;
-                } else {
-                    brewVpEl.style.display = 'none';
-                    brewVpIconEl.style.display = 'none';
-                }
-                
-                const wEl = document.getElementById('ui-white-value');
-                wEl.innerText = `${human.currentWhiteValue} / ${this.game.config.explosionThreshold}`;
-                wEl.className = (human.currentWhiteValue >= this.game.config.explosionThreshold - 2 && !human.exploded) ? 'danger-text' : 'safe-text';
-
-                const titleEl = document.getElementById('ui-player-status-title');
-                if (human.exploded) { titleEl.innerText = "EXPLODED!"; titleEl.style.color = "#ff4444"; } 
-                else if (human.hasStopped) { titleEl.innerText = "Stopped Brewing"; titleEl.style.color = "#4caf50"; } 
-                else { titleEl.innerText = "My Status"; titleEl.style.color = "var(--accent)"; }
-
-                const canDraw = !human.exploded && !human.hasStopped && human.bag.length > 0;
-                document.getElementById('btn-draw').disabled = !canDraw;
-                document.getElementById('btn-stop').disabled = human.exploded || human.hasStopped; // Uncoupled from canDraw
-                
                 const sellBtn = document.getElementById('btn-sell-potion');
                 if (sellBtn) {
                     sellBtn.disabled = human.exploded || human.hasStopped;
@@ -1970,16 +1880,22 @@
                 const lastChip = human.cauldron[human.cauldron.length - 1];
                 const canFlask = human.flaskActive && !human.exploded && !human.hasStopped && human.cauldron.length > 0 && lastChip && lastChip.type.id === 'WHITE';
                 
-                // Apply Sprite UI Icons & Interactivity
-                // Use rotateY to create a flip effect, and specify transition properties explicitly to avoid background-position swiping
-                let flipDeg = human.flaskActive ? '0deg' : '180deg';
-                let transformStyle = `transform: rotateY(${flipDeg})${canFlask ? ' scale(1.05)' : ''};`;
-                let filterStyle = canFlask ? 'filter: drop-shadow(0 0 8px #00b4d8);' : '';
-                
-                flaskIcon.style.cssText = `width: 60px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
-                flaskIcon.title = canFlask ? "Click to use Flask and return the last Boomberry to your bag!" : (!human.flaskActive ? "Flask is empty." : "Can only be used immediately after drawing a Boomberry.");
+                if (flaskIcon) {
+                    let flipDeg = human.flaskActive ? '0deg' : '180deg';
+                    let transformStyle = `transform: rotateY(${flipDeg})${canFlask ? ' scale(1.05)' : ''};`;
+                    let filterStyle = canFlask ? 'filter: drop-shadow(0 0 8px #00b4d8);' : '';
+                    flaskIcon.style.cssText = `width: 60px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
+                    flaskIcon.title = canFlask ? "Click to use Flask and return the last Boomberry to your bag!" : (!human.flaskActive ? "Flask is empty." : "Can only be used immediately after drawing a Boomberry.");
+                }
 
-                const playerListEl = document.getElementById('player-list'); playerListEl.innerHTML = ''; 
+                // Keep ruby icon in shop rendered if visible
+                const shopRubyIcon = document.getElementById('ui-icon-ruby');
+                if (shopRubyIcon) {
+                    shopRubyIcon.style.cssText = `width: 20px; height: 20px; display: inline-block; ${getUtilSpriteStyle('RUBY')}`;
+                }
+
+                const playerListEl = document.getElementById('player-list'); 
+                if (playerListEl) playerListEl.innerHTML = ''; 
                 this.game.players.forEach(player => {
                     const status = player.exploded ? "EXPLODED!" : (player.hasStopped ? "Finished" : "Brewing...");
                     const card = document.createElement('div'); card.className = 'player-card';
@@ -2003,7 +1919,7 @@
 
                     card.innerHTML = `
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <div style="width: 70px; height: 90px; border-radius: 6px; border: 1px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); ${pFaceStyle}"></div>
+                            <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); ${pFaceStyle}"></div>
                             <div style="flex: 1;">
                                 <strong>${player.name}</strong>
                                 <div style="font-size: 0.9em; margin-top: 5px;">
@@ -2024,7 +1940,7 @@
                         });
                     }
 
-                    playerListEl.appendChild(card);
+                    if (playerListEl) playerListEl.appendChild(card);
                 });
             }
         }
