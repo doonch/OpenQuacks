@@ -164,16 +164,6 @@
             opacity: 0.5; cursor: not-allowed;
         }
 
-        #ui-bonus-die-indicator {
-            position: absolute; top: 10px; right: 10px; z-index: 10; 
-            background: rgba(0,0,0,0.5); border: 2px solid gold; 
-            border-radius: 50%; display: flex; align-items: center; 
-            justify-content: center; box-shadow: 0 0 10px gold; 
-            color: white; pointer-events: none;
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            opacity: 0; transform: scale(0.8);
-        }
-
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -320,7 +310,6 @@
         <div id="cauldron-wrapper">
             <button id="btn-toggle-values" title="Toggle Track Values"><div id="ui-monocle-icon"></div></button>
             <button id="btn-sell-potion" title="Sell Potion">💲</button>
-            <div id="ui-bonus-die-indicator" title="Currently winning the Bonus Die!">🎲</div>
             <canvas id="cauldron-canvas"></canvas>
             <video id="explosion-video" src="assets/explosion.mov" playsinline preload="auto" style="display: none;"></video>
             <video id="bubbling-video" src="assets/cauldron_bubble1.mov" playsinline preload="auto" loop style="display: none;"></video>
@@ -1523,13 +1512,6 @@
                     sellBtn.style.height = `${btnSize}px`;
                     sellBtn.style.fontSize = `${btnSize * 0.5}px`;
                 }
-
-                const dieIndicator = document.getElementById('ui-bonus-die-indicator');
-                if (dieIndicator) {
-                    dieIndicator.style.width = `${btnSize}px`;
-                    dieIndicator.style.height = `${btnSize}px`;
-                    dieIndicator.style.fontSize = `${btnSize * 0.6}px`;
-                }
             }
 
             generateSpiral() {
@@ -1904,7 +1886,29 @@
                 document.getElementById('btn-stop').disabled = human.exploded || human.hasStopped; // Uncoupled from canDraw
                 
                 const sellBtn = document.getElementById('btn-sell-potion');
-                if (sellBtn) sellBtn.disabled = human.exploded || human.hasStopped;
+                if (sellBtn) {
+                    sellBtn.disabled = human.exploded || human.hasStopped;
+                    
+                    // Bonus Die Indicator Logic (Glow the sell button)
+                    const nonExploded = this.game.players.filter(p => !p.exploded);
+                    let eligibleForDie = false;
+                    if (!human.exploded && nonExploded.length > 0) {
+                        const maxBrew = Math.max(...nonExploded.map(p => p.currentBrewValue || 0));
+                        if ((human.currentBrewValue || 0) === maxBrew) {
+                            eligibleForDie = true;
+                        }
+                    }
+
+                    if (eligibleForDie && !sellBtn.disabled) {
+                        sellBtn.style.boxShadow = '0 0 15px gold, inset 0 0 5px gold';
+                        sellBtn.style.borderColor = 'gold';
+                        sellBtn.title = "Sell Potion (Currently winning Bonus Die!)";
+                    } else {
+                        sellBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.5)';
+                        sellBtn.style.borderColor = '#4a4e69';
+                        sellBtn.title = "Sell Potion";
+                    }
+                }
 
                 const flaskIcon = document.getElementById('ui-flask-icon');
                 const lastChip = human.cauldron[human.cauldron.length - 1];
@@ -1918,26 +1922,6 @@
                 
                 flaskIcon.style.cssText = `width: 60px; height: 70px; cursor: ${canFlask ? 'pointer' : 'default'}; transition: transform 0.4s ease, filter 0.2s ease; ${transformStyle} ${filterStyle} ${getUtilSpriteStyle(human.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}`;
                 flaskIcon.title = canFlask ? "Click to use Flask and return the last Boomberry to your bag!" : (!human.flaskActive ? "Flask is empty." : "Can only be used immediately after drawing a Boomberry.");
-
-                // Bonus Die Indicator Logic
-                const nonExploded = this.game.players.filter(p => !p.exploded);
-                let eligibleForDie = false;
-                if (!human.exploded && nonExploded.length > 0) {
-                    const maxBrew = Math.max(...nonExploded.map(p => p.currentBrewValue || 0));
-                    if ((human.currentBrewValue || 0) === maxBrew) {
-                        eligibleForDie = true;
-                    }
-                }
-                const dieIndicator = document.getElementById('ui-bonus-die-indicator');
-                if (dieIndicator) {
-                    if (eligibleForDie) {
-                        dieIndicator.style.opacity = '1';
-                        dieIndicator.style.transform = 'scale(1)';
-                    } else {
-                        dieIndicator.style.opacity = '0';
-                        dieIndicator.style.transform = 'scale(0.8)';
-                    }
-                }
 
                 const aiListEl = document.getElementById('ai-list'); aiListEl.innerHTML = ''; 
                 this.game.players.filter(p => !p.isHuman).forEach(ai => {
