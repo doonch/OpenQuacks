@@ -593,9 +593,8 @@
 
         const FORTUNE_CARDS = [
             { text: "Everyone gains 1 Ruby.", type: 'immediate', apply: (g) => g.players.forEach(p => p.rubies++) },
-            { text: "Everyone gains 1 VP.", type: 'immediate', apply: (g) => g.players.forEach(p => p.victoryPoints++) },
             { text: "Everyone gains 2 Money.", type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
-            { text: "Everyone may move their droplet forward 1 space.", type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
+            { text: "Everyone moves their droplet forward 1 space.", type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
             { text: "If you do not explode this round, gain 2 VP.", type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
             { text: "The explosion limit is increased to 9 this round.", type: 'immediate', apply: (g) => g.config.explosionThreshold = 9 }
         ];
@@ -605,6 +604,7 @@
             { text: "2 VP!", icon: "VP", apply: (p) => p.victoryPoints += 2 },
             { text: "1 Ruby!", icon: "RUBY", apply: (p) => p.rubies += 1 },
             { text: "1 Droplet step!", icon: "DROPLET", apply: (p) => p.dropletPosition += 1 },
+            { text: "1 Pumpkin!", isChip: true, typeId: "ORANGE", value: 1, apply: (p) => p.inventory.push({ type: INGREDIENTS.ORANGE, value: 1 }) },
             { text: "1 Pumpkin!", isChip: true, typeId: "ORANGE", value: 1, apply: (p) => p.inventory.push({ type: INGREDIENTS.ORANGE, value: 1 }) }
         ];
 
