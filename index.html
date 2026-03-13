@@ -573,7 +573,8 @@
             { text: "Everyone gains 2 Money.", type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
             { text: "Everyone moves their droplet forward 1 space.", type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
             { text: "If you do not explode this round, gain 2 VP.", type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
-            { text: "The explosion limit is increased to 9 this round.", type: 'immediate', apply: (g) => g.config.explosionThreshold = 9 }
+            { text: "If your white tokens total is exactly 7 when you stop brewing, move your droplet a space forward.", type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(p.currentWhiteValue === 7) p.dropletPosition++; }) },
+            { text: "At the end of the round, refill flask for free.", type: 'conditional', evaluate: (g) => g.players.forEach(p => p.flaskActive = true) }
         ];
 
         const BONUS_DIE_FACES = [
