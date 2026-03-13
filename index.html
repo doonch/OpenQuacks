@@ -600,7 +600,8 @@
             { text: "Everyone gains 1 VP.", type: 'immediate', apply: (g) => g.players.forEach(p => p.victoryPoints++) },
             { text: "Everyone gains 2 Money.", type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
             { text: "Everyone may move their droplet forward 1 space.", type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
-            { text: "If you do not explode this round, gain 2 VP.", type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) }
+            { text: "If you do not explode this round, gain 2 VP.", type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
+            { text: "The explosion limit is increased to 9 this round.", type: 'immediate', apply: (g) => g.config.explosionThreshold = 9 }
         ];
 
         const BONUS_DIE_FACES = [
@@ -753,7 +754,9 @@
                 }
                 
                 for(let i=1; i<=this.config.numAIs; i++) {
-                    this.players.push(new QuacksPlayer(`AI ${i}`, false, this, availableChars[i-1]));
+                    const charId = availableChars[i-1];
+                    const aiName = "The " + charId.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
+                    this.players.push(new QuacksPlayer(aiName, false, this, charId));
                 }
             }
 
@@ -1163,7 +1166,10 @@
                             if (oldChar !== charName) {
                                 this.game.humanPlayer.character = charName;
                                 const conflictAI = this.game.players.find(p => !p.isHuman && p.character === charName);
-                                if (conflictAI) conflictAI.character = oldChar; // Swap AI to old human char
+                                if (conflictAI) {
+                                    conflictAI.character = oldChar; // Swap AI to old human char
+                                    conflictAI.name = "The " + oldChar.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
+                                }
                                 this.updateFullUI();
                             }
                         }
