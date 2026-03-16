@@ -779,6 +779,22 @@
                     if (this.round === 6) {
                         this.uiManager.animateToSack({ typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' });
                     }
+                    if (this.round === 1) {
+                        const startChips = [
+                            { typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 2, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 2, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'WHITE', value: 3, color: '#ffffff', textCol: '#000000' },
+                            { typeId: 'ORANGE', value: 1, color: '#ff8c00', textCol: '#ffffff' },
+                            { typeId: 'GREEN', value: 1, color: '#008000', textCol: '#ffffff' }
+                        ];
+                        startChips.forEach((chip, i) => {
+                            setTimeout(() => this.uiManager.animateToSack(chip), i * 150);
+                        });
+                    }
                 }
 
                 // Start AI loops
@@ -1104,8 +1120,6 @@
                     this.game.setupPlayers(this.game.humanPlayer.character);
                     // Start game loop again
                     this.game.startGame();
-                    // Remind the player of their starting bag
-                    this.showBagModal();
                 });
             }
 
@@ -1164,14 +1178,12 @@
                             this.game.setupPlayers(charName);
                             this.game.startGame();
                             this.updateFullUI();
-                            
                             const forceHelp = window.location.href.includes('help=1');
                             const hasSeenHelp = getCookie('hasSeenHelp');
                             if (forceHelp || !hasSeenHelp) {
                                 this.showHelpModal();
                                 setCookie('hasSeenHelp', 'true', 365);
                             }
-                            this.showBagModal();
                         } else {
                             // Swap dynamically mid-game
                             const oldChar = this.game.humanPlayer.character;
@@ -2089,9 +2101,6 @@
                 if (isHelp) {
                     uiManager.showHelpModal();
                 }
-
-                // Show the bag right away on round 1
-                uiManager.showBagModal();
             }
         };
 
