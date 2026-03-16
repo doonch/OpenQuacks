@@ -757,6 +757,14 @@
             startRound() {
                 this.phase = 'Brewing';
                 this.config.explosionThreshold = 7; // Reset threshold in case it was altered
+                
+                // Day 6 specific rule: Everyone gets a new White-1 token before the round begins
+                if (this.round === 6) {
+                    this.players.forEach(p => {
+                        p.inventory.push({ type: INGREDIENTS.WHITE, value: 1 });
+                    });
+                }
+
                 this.currentFortuneCard = FORTUNE_CARDS[Math.floor(Math.random() * FORTUNE_CARDS.length)];
                 if (this.currentFortuneCard.type === 'immediate') this.currentFortuneCard.apply(this);
 
@@ -766,7 +774,12 @@
                     p.prepareForNewRound();
                 });
 
-                if(this.uiManager) this.uiManager.updateFullUI();
+                if(this.uiManager) {
+                    this.uiManager.updateFullUI();
+                    if (this.round === 6) {
+                        this.uiManager.animateToSack({ typeId: 'WHITE', value: 1, color: '#ffffff', textCol: '#000000' });
+                    }
+                }
 
                 // Start AI loops
                 this.players.filter(p => !p.isHuman).forEach(p => {
@@ -887,6 +900,7 @@
                 this.ctx = this.canvas.getContext('2d');
                 this.wrapper = document.getElementById('cauldron-wrapper');
                 this.spiralSpaces = []; this.shopCart = [];
+                this.sackAnimations = [];
                 this.helpSlideIndex = 0;
                 this.showTrackValues = false;
                 
@@ -906,6 +920,14 @@
             startAnimationLoop() {
                 const loop = () => { this.renderCanvas(); requestAnimationFrame(loop); };
                 loop();
+            }
+
+            animateToSack(chipDef) {
+                this.sackAnimations.push({
+                    chipDef: chipDef,
+                    startTime: Date.now(),
+                    duration: 800 // Milliseconds for the chip to drop into the sack
+                });
             }
 
             playExplosionVideo() {
@@ -1725,6 +1747,41 @@
                     // Shifted slightly down to visually center on the "bulge" of the sack
                     this.ctx.fillText(player.bag.length, sackX + sackSize / 2, sackY + sackSize * 0.55);
                     this.ctx.restore();
+
+                    // NEW: Draw Sack Animations
+                    const now = Date.now();
+                    this.sackAnimations = this.sackAnimations.filter(anim => {
+                        const age = now - anim.startTime;
+                        if (age >= anim.duration) return false;
+
+                        const progress = age / anim.duration;
+                        const easeIn = progress * progress; // Accelerate downward
+                        
+                        const currentX = sackX + sackSize / 2;
+                        const startY = -chipSize;
+                        const targetY = sackY + sackSize / 2;
+                        const currentY = startY + (targetY - startY) * easeIn;
+
+                        this.ctx.globalAlpha = elementAlpha;
+                        
+                        const cDef = CHIP_SPRITE_MAP[`${anim.chipDef.typeId}_${anim.chipDef.value}`];
+                        const imgChips = this.assets.CHIPS;
+                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
+                            const sx = cDef.x * imgChips.width;
+                            const sy = cDef.y * imgChips.height;
+                            const sw = cDef.w * imgChips.width;
+                            const sh = cDef.h * imgChips.height;
+                            
+                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
+                        } else {
+                            // Fallback circles
+                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
+                            this.ctx.fillStyle = anim.chipDef.color || '#ffffff'; this.ctx.fill();
+                            this.ctx.fillStyle = anim.chipDef.textCol || '#000000'; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
+                            this.ctx.fillText(anim.chipDef.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
+                        }
+                        return true;
+                    });
 
                     // 4. Draw Placed Chips (with Animation, Fade-In and Global Fade-Out)
                     player.cauldron.forEach(chip => {
