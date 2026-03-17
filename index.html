@@ -270,6 +270,7 @@
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span>Day <span id="ui-round">1</span> of 9 <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(Brewing)</span></span>
                 <div style="display: flex; gap: 5px; margin-left: auto;">
+                    <button id="btn-book" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #800080; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="Ingredient Rules">📖</button>
                     <button id="btn-settings" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #6a6e8f; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="Settings">⚙️</button>
                     <button id="btn-help" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #00b4d8; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" title="How to play">?</button>
                 </div>
@@ -313,14 +314,35 @@
     </div>
 
     <!-- Modals -->
-    <div id="char-select-modal" class="modal-overlay" style="z-index: 1008;">
+    <div id="settings-modal" class="modal-overlay" style="z-index: 1008;">
         <div class="modal-content" style="max-width: 400px;">
-            <h2 id="char-select-title">🎭 Select Your Character</h2>
-            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">Choose your avatar for this game.</p>
+            <h2 id="settings-title">⚙️ Settings</h2>
+            
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 15px 0 5px 0; text-align: left;">Select Character</h3>
+            <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: left;">Choose your avatar for this game.</p>
             <div id="char-select-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <!-- Filled via JS -->
             </div>
-            <button id="btn-close-char-select" style="background-color: #4a4e69; margin-top: 20px; display: none;">Cancel</button>
+
+            <h3 style="color: var(--accent); font-size: 1rem; margin: 20px 0 5px 0; text-align: left;">Ingredient Rules Set</h3>
+            <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: left;">Choose which set of powers the ingredients have.</p>
+            <select id="settings-book-select" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #4a4e69; border-radius: 6px; font-size: 1rem;">
+                <option value="1">Set 1 (Beginner Friendly)</option>
+                <option value="2">Set 2 (Advanced Strategies)</option>
+            </select>
+
+            <button id="btn-close-settings" style="background-color: #4a4e69; margin-top: 25px; width: 100%; display: none;">Done</button>
+        </div>
+    </div>
+
+    <div id="book-modal" class="modal-overlay" style="z-index: 1007;">
+        <div class="modal-content" style="max-width: 550px;">
+            <h2>📖 Ingredient Rules</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;">Current active ingredient powers.</p>
+            <div id="book-rules-list" style="display: flex; flex-direction: column; gap: 12px; text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; max-height: 50vh; overflow-y: auto;">
+                <!-- Filled via JS -->
+            </div>
+            <button id="btn-close-book" style="background-color: #4a4e69; margin-top: 15px; width: 100%;">Close</button>
         </div>
     </div>
 
@@ -605,6 +627,8 @@
         ];
 
         const INGREDIENT_BOOKS_SET_1 = {
+            WHITE: { description: "Boomberry! If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes." },
+            ORANGE: { description: "Standard ingredient. Adds value to your brew but has no special effect." },
             RED: { 
                 description: "If there is at least 1 Pumpkin in your cauldron, move 1 extra space.",
                 immediate: (p, c) => { 
@@ -633,6 +657,44 @@
             BLACK: { 
                 description: "End of Round: If you placed at least 1 Crow Skull, gain 1 VP and 1 Ruby.",
                 endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) { p.victoryPoints += 1; p.rubies += 1; } } 
+            }
+        };
+
+        const INGREDIENT_BOOKS_SET_2 = {
+            WHITE: { description: "Boomberry! If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes." },
+            ORANGE: { description: "Standard ingredient. Adds value to your brew but has no special effect." },
+            RED: { 
+                description: "If there are 1 or 2 Pumpkins in your cauldron, move 1 extra space. If 3+, move 2 extra spaces.",
+                immediate: (p, c) => { 
+                    const oranges = p.cauldron.filter(ch => ch.type.id === 'ORANGE').length;
+                    if (oranges >= 3) { p.currentBrewValue += 2; c.spaceIndex += 2; }
+                    else if (oranges >= 1) { p.currentBrewValue += 1; c.spaceIndex += 1; }
+                } 
+            },
+            YELLOW: { 
+                description: "If the previous chip was a Boomberry, gain 1 Ruby immediately.",
+                immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.rubies += 1; } 
+            },
+            BLUE: { 
+                description: "End of Round: Gain 1 VP for every Blue chip in your cauldron.",
+                endOfRound: (p) => { const count = p.cauldron.filter(ch => ch.type.id === 'BLUE').length; p.victoryPoints += count; } 
+            },
+            GREEN: { 
+                description: "End of Round: Gain 1 Droplet step if your last placed chip is a Spider.",
+                endOfRound: (p) => { const len = p.cauldron.length; if(len >= 1 && p.cauldron[len-1].type.id === 'GREEN') p.dropletPosition += 1; } 
+            },
+            PURPLE: { 
+                description: "End of Round: 1 Moth = 1 VP. 2 Moths = 1 VP & 1 Ruby. 3+ Moths = 2 VP & 1 Ruby.",
+                endOfRound: (p) => { 
+                    const cnt = p.cauldron.filter(ch => ch.type.id === 'PURPLE').length;
+                    if(cnt === 1) { p.victoryPoints += 1; }
+                    else if(cnt === 2) { p.victoryPoints += 1; p.rubies += 1; }
+                    else if(cnt >= 3) { p.victoryPoints += 2; p.rubies += 1; }
+                } 
+            },
+            BLACK: { 
+                description: "End of Round: If you placed at least 1 Crow Skull, gain 1 Droplet step.",
+                endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) p.dropletPosition += 1; } 
             }
         };
 
@@ -726,8 +788,9 @@
 
         class QuacksGameController {
             constructor(config) {
-                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, ...config };
-                this.round = 1; this.phase = 'Brewing'; this.players = []; this.books = INGREDIENT_BOOKS_SET_1;
+                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, ...config };
+                this.round = 1; this.phase = 'Brewing'; this.players = []; 
+                this.books = this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
             }
 
             setupPlayers(humanCharName) {
@@ -856,7 +919,9 @@
                 if (this.currentFortuneCard && this.currentFortuneCard.type === 'conditional') this.currentFortuneCard.evaluate(this);
 
                 this.players.forEach(p => {
-                    ['BLACK', 'GREEN', 'PURPLE'].forEach(color => { if (this.books[color] && this.books[color].endOfRound) this.books[color].endOfRound(p); });
+                    Object.keys(this.books).forEach(color => { 
+                        if (this.books[color] && this.books[color].endOfRound) this.books[color].endOfRound(p); 
+                    });
                     if (p.roundRuby) p.rubies += 1;
                     if (!p.isHuman) {
                         if (p.exploded) { if (this.round > 6) p.victoryPoints += p.roundVP; else p.money += p.roundMoney; }
@@ -1098,8 +1163,11 @@
                     this.game.continueEvaluationPhase(); 
                 });
 
-                document.getElementById('btn-settings').addEventListener('click', () => { this.showCharacterSelect(false); });
+                document.getElementById('btn-settings').addEventListener('click', () => { this.showSettings(false); });
                 document.getElementById('btn-help').addEventListener('click', () => { this.showHelpModal(); });
+                document.getElementById('btn-book').addEventListener('click', () => { this.showBookModal(); });
+                document.getElementById('btn-close-book').addEventListener('click', () => { document.getElementById('book-modal').style.display = 'none'; });
+                
                 document.getElementById('btn-close-help').addEventListener('click', () => { 
                     document.getElementById('help-modal').style.display = 'none'; 
                     if (this.game.round === 1) {
@@ -1171,8 +1239,7 @@
                 document.getElementById('debug-draw-modal').style.display = 'flex';
             }
 
-            showCharacterSelect(isMandatory) {
-                isMandatory = isMandatory !== undefined ? isMandatory : false;
+            showSettings(isMandatory = false) {
                 const grid = document.getElementById('char-select-grid');
                 grid.innerHTML = '';
                 const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY', 'BARD', 'GARDENER'];
@@ -1185,9 +1252,9 @@
                     
                     btn.addEventListener('click', () => {
                         setCookie('selectedCharacter', charName, 365);
-                        document.getElementById('char-select-modal').style.display = 'none';
                         
                         if (isMandatory) {
+                            document.getElementById('settings-modal').style.display = 'none';
                             this.game.setupPlayers(charName);
                             this.game.startGame();
                             this.updateFullUI();
@@ -1201,7 +1268,7 @@
                                 this.playStartAnimation();
                             }
                         } else {
-                            // Swap dynamically mid-game
+                            // Swap dynamically mid-game without closing the modal immediately to allow further setting tweaks
                             const oldChar = this.game.humanPlayer.character;
                             if (oldChar !== charName) {
                                 this.game.humanPlayer.character = charName;
@@ -1210,6 +1277,7 @@
                                     conflictAI.character = oldChar; // Swap AI to old human char
                                     conflictAI.name = "The " + oldChar.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
                                 }
+                                this.showSettings(false); // Refresh grid styles
                                 this.updateFullUI();
                             }
                         }
@@ -1220,16 +1288,56 @@
                     
                     grid.appendChild(btn);
                 });
+
+                // Book Set Settings
+                const selectEl = document.getElementById('settings-book-select');
+                selectEl.value = this.game.config.bookSet || 1;
                 
-                const closeBtn = document.getElementById('btn-close-char-select');
+                selectEl.onchange = (e) => {
+                    const val = parseInt(e.target.value);
+                    setCookie('selectedBookSet', val, 365);
+                    this.game.config.bookSet = val;
+                    this.game.books = val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    this.updateFullUI();
+                };
+                
+                const closeBtn = document.getElementById('btn-close-settings');
                 if (isMandatory) {
                     closeBtn.style.display = 'none';
                 } else {
-                    closeBtn.style.display = 'inline-block';
-                    closeBtn.onclick = () => { document.getElementById('char-select-modal').style.display = 'none'; };
+                    closeBtn.style.display = 'block';
+                    closeBtn.onclick = () => { document.getElementById('settings-modal').style.display = 'none'; };
                 }
                 
-                document.getElementById('char-select-modal').style.display = 'flex';
+                document.getElementById('settings-modal').style.display = 'flex';
+            }
+
+            showBookModal() {
+                const listEl = document.getElementById('book-rules-list');
+                listEl.innerHTML = '';
+                
+                Object.keys(this.game.books).forEach(colorId => {
+                    const ingDef = INGREDIENTS[colorId];
+                    const bookDef = this.game.books[colorId];
+                    
+                    if (ingDef && bookDef) {
+                        const chipStyle = getChipSpriteStyle(colorId, 1);
+                        
+                        const itemDiv = document.createElement('div');
+                        itemDiv.style.cssText = "display: flex; gap: 15px; align-items: flex-start; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);";
+                        
+                        itemDiv.innerHTML = `
+                            <div class="chip-icon" style="flex: none; width: 40px; height: 40px; ${chipStyle || `background-color: ${ingDef.color};`}"></div>
+                            <div>
+                                <div style="font-weight: bold; color: ${ingDef.color === '#ffffff' || ingDef.color === '#000000' ? '#ddd' : ingDef.color}; text-shadow: 1px 1px 0px #000;">${ingDef.name}</div>
+                                <div style="font-size: 0.9rem; color: #ccc; margin-top: 4px; line-height: 1.4;">${bookDef.description}</div>
+                            </div>
+                        `;
+                        listEl.appendChild(itemDiv);
+                    }
+                });
+                
+                document.getElementById('book-modal').style.display = 'flex';
             }
 
             showHelpModal() {
@@ -2107,7 +2215,8 @@
             document.getElementById('loading-overlay').style.display = 'none';
 
             // 3. Boot Game and Check Character Selection
-            const gameConfig = { numAIs: 2 }; 
+            const savedBookSet = parseInt(getCookie('selectedBookSet')) || 1;
+            const gameConfig = { numAIs: 2, bookSet: savedBookSet }; 
             const gameController = new QuacksGameController(gameConfig);
             const uiManager = new QuacksUIManager(gameController, window.GAME_ASSETS);
             
@@ -2115,7 +2224,7 @@
             
             if (!savedChar) {
                 // Mandatory selection - pauses game start until user picks
-                uiManager.showCharacterSelect(true);
+                uiManager.showSettings(true);
             } else {
                 // Pre-selected - setup and start immediately
                 gameController.setupPlayers(savedChar);
