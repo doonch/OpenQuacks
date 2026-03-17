@@ -1891,83 +1891,7 @@
                     this.ctx.fillText(displayBagCount, sackX + sackSize / 2, sackY + sackSize * 0.55);
                     this.ctx.restore();
 
-                    // NEW: Draw Sack Animations
-                    const now = Date.now();
-                    this.sackAnimations = this.sackAnimations.filter(anim => {
-                        const age = now - anim.startTime;
-                        if (age < 0) return true; // Delayed start
-                        if (age >= anim.duration) return false;
-
-                        const progress = age / anim.duration;
-                        const easeIn = progress * progress; // Accelerate downward
-                        
-                        const currentX = sackX + sackSize / 2;
-                        const startY = -chipSize;
-                        const targetY = sackY + sackSize / 2;
-                        const currentY = startY + (targetY - startY) * easeIn;
-
-                        this.ctx.globalAlpha = elementAlpha;
-                        
-                        const cDef = CHIP_SPRITE_MAP[`${anim.chipDef.typeId}_${anim.chipDef.value}`];
-                        const imgChips = this.assets.CHIPS;
-                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
-                            const sx = cDef.x * imgChips.width;
-                            const sy = cDef.y * imgChips.height;
-                            const sw = cDef.w * imgChips.width;
-                            const sh = cDef.h * imgChips.height;
-                            
-                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
-                        } else {
-                            // Fallback circles
-                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
-                            this.ctx.fillStyle = anim.chipDef.color || '#ffffff'; this.ctx.fill();
-                            this.ctx.fillStyle = anim.chipDef.textCol || '#000000'; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
-                            this.ctx.fillText(anim.chipDef.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
-                        }
-                        return true;
-                    });
-
-                    // 4. Draw Placed Chips (with Animation, Fade-In and Global Fade-Out)
-                    player.cauldron.forEach(chip => {
-                        const pos = this.spiralSpaces[chip.spaceIndex];
-                        if (!pos) return;
-
-                        // Animation Math
-                        const animDuration = 600;
-                        const age = chip.drawnAt ? Date.now() - chip.drawnAt : animDuration;
-                        const progress = Math.min(1.0, Math.max(0, age / animDuration));
-                        const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
-                        
-                        // Start position just above the sack
-                        const startX = sackX + sackSize / 2;
-                        const startY = sackY - chipSize / 2;
-                        
-                        const currentX = startX + (pos.x - startX) * easeOut;
-                        const currentY = startY + (pos.y - startY) * easeOut;
-
-                        // Fade-in over the first 300ms
-                        const chipAlpha = Math.min(1.0, Math.max(0, age / 300.0));
-                        this.ctx.globalAlpha = Number((elementAlpha * chipAlpha).toFixed(3)); // Combine safely
-
-                        const cDef = CHIP_SPRITE_MAP[`${chip.type.id}_${chip.value}`];
-                        const imgChips = this.assets.CHIPS;
-                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
-                            const sx = cDef.x * imgChips.width;
-                            const sy = cDef.y * imgChips.height;
-                            const sw = cDef.w * imgChips.width;
-                            const sh = cDef.h * imgChips.height;
-                            
-                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
-                        } else {
-                            // Fallback circles
-                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
-                            this.ctx.fillStyle = chip.type.color; this.ctx.fill();
-                            this.ctx.fillStyle = chip.type.textCol; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
-                            this.ctx.fillText(chip.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
-                        }
-                    });
-
-                    // 5. Draw Track Values (if toggled)
+                    // 4. Draw Track Values (if toggled) - Moved here so chips render on top
                     if (this.showTrackValues) {
                         this.ctx.save();
                         this.ctx.globalAlpha = elementAlpha;
@@ -2017,6 +1941,82 @@
                         });
                         this.ctx.restore();
                     }
+
+                    // NEW: Draw Sack Animations
+                    const now = Date.now();
+                    this.sackAnimations = this.sackAnimations.filter(anim => {
+                        const age = now - anim.startTime;
+                        if (age < 0) return true; // Delayed start
+                        if (age >= anim.duration) return false;
+
+                        const progress = age / anim.duration;
+                        const easeIn = progress * progress; // Accelerate downward
+                        
+                        const currentX = sackX + sackSize / 2;
+                        const startY = -chipSize;
+                        const targetY = sackY + sackSize / 2;
+                        const currentY = startY + (targetY - startY) * easeIn;
+
+                        this.ctx.globalAlpha = elementAlpha;
+                        
+                        const cDef = CHIP_SPRITE_MAP[`${anim.chipDef.typeId}_${anim.chipDef.value}`];
+                        const imgChips = this.assets.CHIPS;
+                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
+                            const sx = cDef.x * imgChips.width;
+                            const sy = cDef.y * imgChips.height;
+                            const sw = cDef.w * imgChips.width;
+                            const sh = cDef.h * imgChips.height;
+                            
+                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
+                        } else {
+                            // Fallback circles
+                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
+                            this.ctx.fillStyle = anim.chipDef.color || '#ffffff'; this.ctx.fill();
+                            this.ctx.fillStyle = anim.chipDef.textCol || '#000000'; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
+                            this.ctx.fillText(anim.chipDef.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
+                        }
+                        return true;
+                    });
+
+                    // 5. Draw Placed Chips (with Animation, Fade-In and Global Fade-Out)
+                    player.cauldron.forEach(chip => {
+                        const pos = this.spiralSpaces[chip.spaceIndex];
+                        if (!pos) return;
+
+                        // Animation Math
+                        const animDuration = 600;
+                        const age = chip.drawnAt ? Date.now() - chip.drawnAt : animDuration;
+                        const progress = Math.min(1.0, Math.max(0, age / animDuration));
+                        const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
+                        
+                        // Start position just above the sack
+                        const startX = sackX + sackSize / 2;
+                        const startY = sackY - chipSize / 2;
+                        
+                        const currentX = startX + (pos.x - startX) * easeOut;
+                        const currentY = startY + (pos.y - startY) * easeOut;
+
+                        // Fade-in over the first 300ms
+                        const chipAlpha = Math.min(1.0, Math.max(0, age / 300.0));
+                        this.ctx.globalAlpha = Number((elementAlpha * chipAlpha).toFixed(3)); // Combine safely
+
+                        const cDef = CHIP_SPRITE_MAP[`${chip.type.id}_${chip.value}`];
+                        const imgChips = this.assets.CHIPS;
+                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
+                            const sx = cDef.x * imgChips.width;
+                            const sy = cDef.y * imgChips.height;
+                            const sw = cDef.w * imgChips.width;
+                            const sh = cDef.h * imgChips.height;
+                            
+                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
+                        } else {
+                            // Fallback circles
+                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
+                            this.ctx.fillStyle = chip.type.color; this.ctx.fill();
+                            this.ctx.fillStyle = chip.type.textCol; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
+                            this.ctx.fillText(chip.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
+                        }
+                    });
                 }
                 
                 this.ctx.restore(); // Safely wipe context state so Safari doesn't carry ghost alphas over
