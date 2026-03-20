@@ -2240,6 +2240,10 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const lang = urlParams.get('lang');
+            
+            const activeLang = lang || 'en';
+            document.documentElement.dir = ['he', 'ar', 'fa'].includes(activeLang) ? 'rtl' : 'ltr';
+
             if (lang) {
                 try {
                     const response = await fetch(`lang/${lang}.json`);
@@ -2313,6 +2317,7 @@
                 btn.style.cssText = `width: 60px; height: 60px; border-radius: 8px; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 2px solid ${l === currentLangParam ? 'gold' : 'transparent'}; transition: all 0.2s;`;
                 btn.innerText = LANG_FLAGS[l];
                 btn.onclick = async () => {
+                    document.documentElement.dir = ['he', 'ar', 'fa'].includes(l) ? 'rtl' : 'ltr';
                     try {
                         const response = await fetch(`lang/${l}.json`);
                         if (response.ok) {
