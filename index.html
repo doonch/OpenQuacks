@@ -338,6 +338,16 @@
     </div>
 
     <!-- Modals -->
+    <div id="lang-modal" class="modal-overlay" style="z-index: 1009;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>🌐 Select Language</h2>
+            <div id="lang-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                <!-- Filled via JS -->
+            </div>
+            <button id="btn-close-lang" style="background-color: #4a4e69; margin-top: 25px; width: 100%;" data-i18n="btn_cancel">Cancel</button>
+        </div>
+    </div>
+
     <div id="settings-modal" class="modal-overlay" style="z-index: 1008;">
         <div class="modal-content" style="max-width: 400px;">
             <h2 id="settings-title" data-i18n="modal_settings_title">⚙️ Settings</h2>
@@ -530,6 +540,7 @@
             ];
 
             INGREDIENT_BOOKS_SET_1 = {
+                ORANGE: { description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect.") },
                 RED: { 
                     description: t('book1_red', "If there is at least 1 Pumpkin in your cauldron, move 1 extra space."),
                     immediate: (p, c) => { 
@@ -846,7 +857,6 @@
                 
                 for(let i=1; i<=this.config.numAIs; i++) {
                     const charId = availableChars[i-1];
-                    const aiName = `${t('ui_ai_prefix', 'AI')} ` + charId.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
                     const charNameKey = 'char_' + charId.toLowerCase();
                     const fallbackName = charId.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
                     
@@ -1271,7 +1281,7 @@
                                 this.playStartAnimation();
                             }
                         } else {
-                            // Swap dynamically mid-game
+                            // Swap dynamically mid-game without closing the modal immediately to allow further setting tweaks
                             const oldChar = this.game.humanPlayer.character;
                             if (oldChar !== charName) {
                                 this.game.humanPlayer.character = charName;
@@ -1429,7 +1439,7 @@
             showBonusDieModal(face, money) {
                 const descEl = document.getElementById('bonus-die-desc');
                 if (descEl) {
-                    descEl.innerHTML = `You brewed the best potion this round! (${money} <span style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; ${getUtilSpriteStyle('COIN')}"></span>)`;
+                    descEl.innerHTML = `${t('modal_die_desc', "You brewed the best potion this round!")} (${money} <span style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; ${getUtilSpriteStyle('COIN')}"></span>)`;
                 }
                 
                 let iconHtml = '';
@@ -2290,6 +2300,80 @@
                     uiManager.playStartAnimation();
                 }
             }
+
+            // --- Language Selector Setup ---
+            const LANG_FLAGS = { en: '🇺🇸', es: '🇪🇸', he: '🇮🇱', ar: '🇸🇦', fa: '🇮🇷', pl: '🇵🇱', de: '🇩🇪' };
+            const langGrid = document.getElementById('lang-grid');
+            const currentLangParam = lang || 'en';
+            
+            document.getElementById('btn-lang').innerText = LANG_FLAGS[currentLangParam] || '🇺🇸';
+
+            Object.keys(LANG_FLAGS).forEach(l => {
+                const btn = document.createElement('div');
+                btn.style.cssText = `width: 60px; height: 60px; border-radius: 8px; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 2rem; cursor: pointer; border: 2px solid ${l === currentLangParam ? 'gold' : 'transparent'}; transition: all 0.2s;`;
+                btn.innerText = LANG_FLAGS[l];
+                btn.onclick = async () => {
+                    try {
+                        const response = await fetch(`lang/${l}.json`);
+                        if (response.ok) {
+                            window.I18N = await response.json();
+                        } else {
+                            window.I18N = {};
+                        }
+                    } catch (e) {
+                        console.warn(`Could not load translations for lang=${l}`, e);
+                        window.I18N = {};
+                    }
+                    
+                    document.querySelectorAll('[data-i18n]').forEach(el => {
+                        const key = el.getAttribute('data-i18n');
+                        if (window.I18N[key]) el.innerHTML = window.I18N[key];
+                    });
+                    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                        const key = el.getAttribute('data-i18n-title');
+                        if (window.I18N[key]) el.title = window.I18N[key];
+                    });
+                    
+                    initGameData();
+                    gameController.books = gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    
+                    // Update Player names locally
+                    gameController.players.forEach(p => {
+                        if (p.isHuman) {
+                            p.name = t('ui_you', 'You');
+                        } else {
+                            const charNameKey = 'char_' + p.character.toLowerCase();
+                            const fallbackName = p.character.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
+                            const localizedCharName = t(charNameKey, fallbackName);
+                            p.name = `${localizedCharName}`;
+                        }
+                    });
+                    
+                    uiManager.updateFullUI();
+                    if (document.getElementById('shop-modal').style.display === 'flex') {
+                        uiManager.renderShopUI();
+                    }
+                    
+                    document.getElementById('btn-lang').innerText = LANG_FLAGS[l];
+                    document.getElementById('lang-modal').style.display = 'none';
+                    
+                    Array.from(langGrid.children).forEach((child, idx) => {
+                        child.style.border = Object.keys(LANG_FLAGS)[idx] === l ? '2px solid gold' : '2px solid transparent';
+                    });
+                    
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('lang', l);
+                    window.history.pushState({}, '', newUrl);
+                };
+                langGrid.appendChild(btn);
+            });
+
+            document.getElementById('btn-lang').addEventListener('click', () => {
+                document.getElementById('lang-modal').style.display = 'flex';
+            });
+            document.getElementById('btn-close-lang').addEventListener('click', () => {
+                document.getElementById('lang-modal').style.display = 'none';
+            });
         };
 
     </script>
