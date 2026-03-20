@@ -516,15 +516,15 @@
             VP_RAT_SPACES = [1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91];
 
             FORTUNE_CARDS = [
-                { text: t('fortune_ruby', "Everyone gains 1 Ruby."), type: 'immediate', apply: (g) => g.players.forEach(p => p.rubies++) },
-                { text: t('fortune_vp', "Everyone gains 1 VP."), type: 'immediate', apply: (g) => g.players.forEach(p => p.victoryPoints++) },
-                { text: t('fortune_money', "Everyone gains 2 Money."), type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
-                { text: t('fortune_droplet', "Everyone moves their droplet forward 1 space."), type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
-                { text: t('fortune_no_explode', "If you do not explode this round, gain 2 VP."), type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
-                { text: t('fortune_exactly_seven', "If your white tokens total is exactly 7 when you stop brewing, move your droplet a space forward."), type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(p.currentWhiteValue === 7) p.dropletPosition++; }) },
-                { text: t('fortune_free_flask', "At the end of the round, refill flask for free."), type: 'conditional', evaluate: (g) => g.players.forEach(p => p.flaskActive = true) },
-                { text: t('fortune_explode_limit', "The explosion limit is increased to 9 this round."), type: 'immediate', apply: (g) => g.config.explosionThreshold = 9 },
-                { text: t('fortune_fewest_vp_spider', "The player(s) with the fewest VP get a Spider token."), type: 'immediate', apply: (g) => {
+                { id: 'fortune_ruby', text: t('fortune_ruby', "Everyone gains 1 Ruby."), type: 'immediate', apply: (g) => g.players.forEach(p => p.rubies++) },
+                { id: 'fortune_vp', text: t('fortune_vp', "Everyone gains 1 VP."), type: 'immediate', apply: (g) => g.players.forEach(p => p.victoryPoints++) },
+                { id: 'fortune_money', text: t('fortune_money', "Everyone gains 2 Money."), type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
+                { id: 'fortune_droplet', text: t('fortune_droplet', "Everyone moves their droplet forward 1 space."), type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
+                { id: 'fortune_no_explode', text: t('fortune_no_explode', "If you do not explode this round, gain 2 VP."), type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
+                { id: 'fortune_exactly_seven', text: t('fortune_exactly_seven', "If your white tokens total is exactly 7 when you stop brewing, move your droplet a space forward."), type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(p.currentWhiteValue === 7) p.dropletPosition++; }) },
+                { id: 'fortune_free_flask', text: t('fortune_free_flask', "At the end of the round, refill flask for free."), type: 'conditional', evaluate: (g) => g.players.forEach(p => p.flaskActive = true) },
+                { id: 'fortune_explode_limit', text: t('fortune_explode_limit', "The explosion limit is increased to 9 this round."), type: 'immediate', apply: (g) => g.config.explosionThreshold = 9 },
+                { id: 'fortune_fewest_vp_spider', text: t('fortune_fewest_vp_spider', "The player(s) with the fewest VP get a Spider token."), type: 'immediate', apply: (g) => {
                     const minVp = Math.min(...g.players.map(p => p.victoryPoints));
                     g.players.forEach(p => { if(p.victoryPoints === minVp) p.inventory.push({ type: INGREDIENTS.GREEN, value: 1 }); });
                 }}
@@ -2342,6 +2342,11 @@
                     initGameData();
                     gameController.books = gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
                     
+                    // Update active fortune card reference for the UI string update
+                    if (gameController.currentFortuneCard) {
+                        gameController.currentFortuneCard = FORTUNE_CARDS.find(c => c.id === gameController.currentFortuneCard.id) || gameController.currentFortuneCard;
+                    }
+
                     // Update Player names locally
                     gameController.players.forEach(p => {
                         if (p.isHuman) {
