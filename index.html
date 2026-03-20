@@ -2239,10 +2239,9 @@
             };
 
             const urlParams = new URLSearchParams(window.location.search);
-            const lang = urlParams.get('lang');
+            const lang = urlParams.get('lang') || 'en';
             
-            const activeLang = lang || 'en';
-            document.documentElement.dir = ['he', 'ar', 'fa'].includes(activeLang) ? 'rtl' : 'ltr';
+            document.documentElement.dir = ['he', 'ar', 'fa'].includes(lang) ? 'rtl' : 'ltr';
 
             if (lang) {
                 try {
