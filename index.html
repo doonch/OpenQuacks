@@ -518,7 +518,7 @@
 
             FORTUNE_CARDS = [
                 { id: 'fortune_ruby', text: t('fortune_ruby', "Everyone gains 1 Ruby."), type: 'immediate', apply: (g) => g.players.forEach(p => p.rubies++) },
-                { id: 'fortune_vp', text: t('fortune_vp', "Everyone gains 1 VP."), type: 'immediate', apply: (g) => g.players.forEach(p => p.victoryPoints++) },
+                { id: 'fortune_orange_boost', text: t('fortune_orange_boost', "This round, orange tokens move an extra space forward."), type: 'immediate', apply: (g) => g.config.orangeExtraSpace = true },
                 { id: 'fortune_money', text: t('fortune_money', "Everyone gains 2 Money."), type: 'immediate', apply: (g) => g.players.forEach(p => p.money += 2) },
                 { id: 'fortune_droplet', text: t('fortune_droplet', "Everyone moves their droplet forward 1 space."), type: 'immediate', apply: (g) => g.players.forEach(p => p.dropletPosition++) },
                 { id: 'fortune_no_explode', text: t('fortune_no_explode', "If you do not explode this round, gain 2 VP."), type: 'conditional', evaluate: (g) => g.players.forEach(p => { if(!p.exploded) p.victoryPoints += 2; }) },
@@ -541,7 +541,15 @@
             ];
 
             INGREDIENT_BOOKS_SET_1 = {
-                ORANGE: { description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect.") },
+                ORANGE: { 
+                    description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect."),
+                    immediate: (p, c) => {
+                        if (p.game.config.orangeExtraSpace) {
+                            p.currentBrewValue += 1;
+                            c.spaceIndex += 1;
+                        }
+                    }
+                },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
                 RED: { 
                     description: t('book1_red', "If there is at least 1 Pumpkin in your cauldron, move 1 extra space."),
@@ -575,7 +583,15 @@
             };
 
             INGREDIENT_BOOKS_SET_2 = {
-                ORANGE: { description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect.") },
+                ORANGE: { 
+                    description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect."),
+                    immediate: (p, c) => {
+                        if (p.game.config.orangeExtraSpace) {
+                            p.currentBrewValue += 1;
+                            c.spaceIndex += 1;
+                        }
+                    }
+                },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
                 RED: { 
                     description: t('book2_red', "If there are 1 or 2 Pumpkins in your cauldron, move 1 extra space. If 3+, move 2 extra spaces."),
@@ -838,7 +854,7 @@
 
         class QuacksGameController {
             constructor(config) {
-                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, ...config };
+                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; 
                 this.books = this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
             }

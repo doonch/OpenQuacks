@@ -98,6 +98,7 @@
   "book2_purple": "End of Round: 1 Moth = 1 VP. 2 Moths = 1 VP & 1 Ruby. 3+ Moths = 2 VP & 1 Ruby.",
   "book2_black": "End of Round: If you placed at least 1 Crow Skull, gain 1 Droplet step.",
   "fortune_ruby": "Everyone gains 1 Ruby.",
+  "fortune_orange_boost": "This round, orange tokens move an extra space forwards.",
   "fortune_vp": "Everyone gains 1 VP.",
   "fortune_money": "Everyone gains 2 Money.",
   "fortune_droplet": "Everyone moves their droplet forward 1 space.",
