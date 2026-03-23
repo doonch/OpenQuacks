@@ -421,7 +421,7 @@
         <div class="modal-content">
             <h2 data-i18n="modal_sell_title">💰 Sell Potion? 💰</h2>
             <p style="margin-bottom: 15px;" data-i18n="modal_sell_desc">Stop brewing and sell this potion for:</p>
-            <div id="sell-modal-value" style="display: flex; justify-content: center; align-items: center; font-size: 1.5rem; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+            <div id="sell-modal-value" dir="ltr" style="display: flex; justify-content: center; align-items: center; font-size: 1.5rem; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
                 <!-- Filled by JS -->
             </div>
             <div style="display: flex; gap: 10px; justify-content: center;">
@@ -435,11 +435,12 @@
         <div class="modal-content">
             <h2 data-i18n="modal_shop_title">🛒 Shopping!</h2>
             <div style="display: flex; justify-content: space-around; margin-bottom: 15px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
-                <span style="display: flex; align-items: center;"><span data-i18n="shop_money">Money:</span> <strong id="shop-money" style="color: gold; font-size: 1.2rem; margin-left: 5px;">0</strong><span id="shop-money-icon"></span></span>
+                <span style="display: flex; align-items: center;"><span data-i18n="shop_money">Money:</span> <span dir="ltr" style="display: inline-flex; align-items: center;"><strong id="shop-money" style="color: gold; font-size: 1.2rem; margin-left: 5px;">0</strong><span id="shop-money-icon"></span></span></span>
                 <span style="display: flex; align-items: center;">
-                    <span data-i18n="shop_rubies">Rubies:</span> <strong id="shop-rubies" style="color: #ff4444; font-size: 1.2rem; margin-left: 5px;">0</strong>
-                    <span id="shop-ruby-icon" class="icon-small"></span> 
+                    <span data-i18n="shop_rubies">Rubies:</span> <span dir="ltr" style="display: inline-flex; align-items: center;"><strong id="shop-rubies" style="color: #ff4444; font-size: 1.2rem; margin-left: 5px;">0</strong>
+                    <span id="shop-ruby-icon" class="icon-small"></span></span> 
                 </span>
+
             </div>
             <p style="margin-bottom: 10px; font-size: 0.9em;" data-i18n="shop_desc">Buy up to 2 ingredients of different colors. Ruby items have no limits!</p>
             <div id="shop-items" class="shop-grid"></div>
@@ -2259,7 +2260,7 @@
                     const pMood = getPlayerMood(player);
                     const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
                     
-                    let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} `;
+                    let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} <span dir="ltr" style="display: inline-flex; align-items: center;">`;
                     if (pRewards.vp > 0) {
                         brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
                     }
@@ -2270,7 +2271,7 @@
                         }
                         brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
                     }
-                    brewHtml += `</div>`;
+                    brewHtml += `</span></div>`;
 
                     card.innerHTML = `
                         <div style="display: flex; gap: 10px; align-items: center;">
