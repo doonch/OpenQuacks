@@ -127,7 +127,7 @@
   "msg_flask_empty": "El frasco está vacío.",
   "msg_flask_invalid": "Solo se puede usar justo después de sacar una alubia blanca.",
   "msg_debug_bag": "Shift-clic para espiar la bolsa (Debug)",
-  "msg_view_bag": "Haz clic para ver tu bolsa",
+  "tooltip_book": "Reglas",
   "msg_bag_debug": "bolsa de (Debug)",
   "msg_sell_modal": "Vende por:",
   "char_witch": "La Bruja",
