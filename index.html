@@ -97,6 +97,9 @@
         #fortune-teller { border: 2px solid #800080; background: rgba(128, 0, 128, 0.1); }
         #ui-fortune-text { font-style: italic; color: #dda0dd; margin-top: 10px; }
 
+        #ui-human-face { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+        #ui-human-face:hover { transform: scale(1.05); box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); border-color: gold !important; }
+
         #side-panel { grid-column: 2 / 3; grid-row: 1 / 3; overflow-y: auto; display: flex; flex-direction: column; }
         .player-card { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 15px; }
 
@@ -295,7 +298,7 @@
                 </div>
             </div>
             <div class="board-sections">
-                <div class="board-section" id="human-character">
+                <div class="board-section" id="human-character" title="Click to change character">
                     <div id="ui-human-face" style="width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5);"></div>
                 </div>
                 <div class="board-section" id="flask-section" style="justify-content: center;">
@@ -339,6 +342,17 @@
     </div>
 
     <!-- Modals -->
+    <div id="char-select-modal" class="modal-overlay" style="z-index: 1009;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 data-i18n="modal_char_select_title">🎭 Select Your Character</h2>
+            <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: start;" data-i18n="modal_char_select_desc">Choose your avatar for this game.</p>
+            <div id="char-select-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <!-- Filled via JS -->
+            </div>
+            <button id="btn-close-char-select" style="background-color: #4a4e69; margin-top: 25px; width: 100%; display: none;" data-i18n="btn_cancel">Cancel</button>
+        </div>
+    </div>
+
     <div id="lang-modal" class="modal-overlay" style="z-index: 1009;">
         <div class="modal-content" style="max-width: 400px;">
             <h2>🌐 Select Language</h2>
@@ -353,12 +367,6 @@
         <div class="modal-content" style="max-width: 400px;">
             <h2 id="settings-title" data-i18n="modal_settings_title">⚙️ Settings</h2>
             
-            <h3 style="color: var(--accent); font-size: 1rem; margin: 15px 0 5px 0; text-align: start;" data-i18n="modal_settings_char">Select Character</h3>
-            <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: start;" data-i18n="modal_char_select_desc">Choose your avatar for this game.</p>
-            <div id="char-select-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <!-- Filled via JS -->
-            </div>
-
             <h3 style="color: var(--accent); font-size: 1rem; margin: 20px 0 5px 0; text-align: start;" data-i18n="modal_settings_rules">Ingredient Rules Set</h3>
             <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: start;" data-i18n="modal_settings_rules_desc">Choose which set of powers the ingredients have.</p>
             <select id="settings-book-select" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #4a4e69; border-radius: 6px; font-size: 1rem;">
@@ -366,7 +374,7 @@
                 <option value="2" data-i18n="settings_set2">Set 2 (Advanced Strategies)</option>
             </select>
 
-            <button id="btn-close-settings" style="background-color: #4a4e69; margin-top: 25px; width: 100%; display: none;" data-i18n="btn_done">Done</button>
+            <button id="btn-close-settings" style="background-color: #4a4e69; margin-top: 25px; width: 100%;" data-i18n="btn_done">Done</button>
         </div>
     </div>
 
@@ -440,7 +448,6 @@
                     <span data-i18n="shop_rubies">Rubies:</span> <span dir="ltr" style="display: inline-flex; align-items: center;"><strong id="shop-rubies" style="color: #ff4444; font-size: 1.2rem; margin-left: 5px;">0</strong>
                     <span id="shop-ruby-icon" class="icon-small"></span></span> 
                 </span>
-
             </div>
             <p style="margin-bottom: 10px; font-size: 0.9em;" data-i18n="shop_desc">Buy up to 2 ingredients of different colors. Ruby items have no limits!</p>
             <div id="shop-items" class="shop-grid"></div>
@@ -1241,7 +1248,8 @@
                     this.game.continueEvaluationPhase(); 
                 });
 
-                document.getElementById('btn-settings').addEventListener('click', () => { this.showSettings(false); });
+                document.getElementById('btn-settings').addEventListener('click', () => { this.showSettings(); });
+                document.getElementById('btn-close-settings').addEventListener('click', () => { document.getElementById('settings-modal').style.display = 'none'; });
                 document.getElementById('btn-help').addEventListener('click', () => { this.showHelpModal(); });
                 document.getElementById('btn-book').addEventListener('click', () => { this.showBookModal(); });
                 document.getElementById('btn-close-book').addEventListener('click', () => { document.getElementById('book-modal').style.display = 'none'; });
@@ -1264,6 +1272,10 @@
                         this.helpSlideIndex++;
                         this.renderHelpSlide();
                     }
+                });
+
+                document.getElementById('ui-human-face').addEventListener('click', () => {
+                    this.showCharacterSelect(false);
                 });
 
                 document.getElementById('btn-toggle-values').addEventListener('click', () => {
@@ -1317,7 +1329,7 @@
                 document.getElementById('debug-draw-modal').style.display = 'flex';
             }
 
-            showSettings(isMandatory = false) {
+            showCharacterSelect(isMandatory = false) {
                 const grid = document.getElementById('char-select-grid');
                 grid.innerHTML = '';
                 const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY', 'BARD', 'GARDENER'];
@@ -1332,7 +1344,7 @@
                         setCookie('selectedCharacter', charName, 365);
                         
                         if (isMandatory) {
-                            document.getElementById('settings-modal').style.display = 'none';
+                            document.getElementById('char-select-modal').style.display = 'none';
                             this.game.setupPlayers(charName);
                             this.game.startGame();
                             this.updateFullUI();
@@ -1360,7 +1372,7 @@
                                     
                                     conflictAI.name = `${localizedCharName}`;
                                 }
-                                this.showSettings(false); // Refresh grid styles
+                                this.showCharacterSelect(false); // Refresh grid styles
                                 this.updateFullUI();
                             }
                         }
@@ -1372,6 +1384,18 @@
                     grid.appendChild(btn);
                 });
 
+                const closeBtn = document.getElementById('btn-close-char-select');
+                if (isMandatory) {
+                    closeBtn.style.display = 'none';
+                } else {
+                    closeBtn.style.display = 'block';
+                    closeBtn.onclick = () => { document.getElementById('char-select-modal').style.display = 'none'; };
+                }
+                
+                document.getElementById('char-select-modal').style.display = 'flex';
+            }
+
+            showSettings() {
                 // Book Set Settings
                 const selectEl = document.getElementById('settings-book-select');
                 selectEl.value = this.game.config.bookSet || 1;
@@ -1383,14 +1407,6 @@
                     this.game.books = val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
                     this.updateFullUI();
                 };
-                
-                const closeBtn = document.getElementById('btn-close-settings');
-                if (isMandatory) {
-                    closeBtn.style.display = 'none';
-                } else {
-                    closeBtn.style.display = 'block';
-                    closeBtn.onclick = () => { document.getElementById('settings-modal').style.display = 'none'; };
-                }
                 
                 document.getElementById('settings-modal').style.display = 'flex';
             }
@@ -2357,7 +2373,7 @@
             
             if (!savedChar) {
                 // Mandatory selection - pauses game start until user picks
-                uiManager.showSettings(true);
+                uiManager.showCharacterSelect(true);
             } else {
                 // Pre-selected - setup and start immediately
                 gameController.setupPlayers(savedChar);
