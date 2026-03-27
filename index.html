@@ -668,10 +668,10 @@
 
             const defaultPower = { 
                 applyStart: (p) => {
-                p.inventory.push({ type: INGREDIENTS.YELLOW, value: 1 });
-                if (p.isHuman && p.game.uiManager) {
-                    p.game.uiManager.queueSackAnimation({ typeId: 'YELLOW', value: 1, color: INGREDIENTS.YELLOW.color, textCol: INGREDIENTS.YELLOW.textCol });
-                }
+                    p.inventory.push({ type: INGREDIENTS.YELLOW, value: 1 });
+                    if (p.isHuman && p.game.uiManager) {
+                        p.game.uiManager.queueSackAnimation({ typeId: 'YELLOW', value: 1, color: INGREDIENTS.YELLOW.color, textCol: INGREDIENTS.YELLOW.textCol });
+                    }
                 } 
             };
             CHARACTER_POWERS = {
@@ -803,6 +803,14 @@
             return `background-image: url('${ASSET_PATHS.CHARACTERS}'); background-size: 400% 800%; background-position: ${x}% ${y}%; background-repeat: no-repeat;`;
         }
 
+        function getCharacterFallbackEmoji(charName) {
+            const CHAR_EMOJIS = {
+                'WIZARD': '🧙‍♂️', 'WITCH': '🧙‍♀️', 'MONK': '🦲', 'CHILD': '🧒',
+                'PRINCESS': '👸', 'VOODOO_LADY': '🧟‍♀️', 'BARD': '🪕', 'GARDENER': '🧑‍🌾'
+            };
+            return CHAR_EMOJIS[charName] || '👤';
+        }
+
         // --- Helper to determine the mood of a player based on state ---
         function getPlayerMood(player, isGameOver, isWinner) {
             isGameOver = isGameOver || false;
@@ -814,14 +822,13 @@
             return 'SMIRK';
         }
 
-
         /**
          * 3. GAME LOGIC & STATE
          */
         class QuacksPlayer {
-            constructor(name, isHuman, game, charName) {
+            constructor(name, isHuman, game, charName = 'CHILD') {
                 this.name = name; this.isHuman = isHuman; this.game = game;
-                this.character = charName || 'CHILD';
+                this.character = charName;
                 this.victoryPoints = 0; this.rubies = 0; this.money = 0;
                 this.flaskActive = true; this.dropletPosition = 0; this.ratTails = 0;
                 this.inventory = []; this.bag = []; this.cauldron = [];
@@ -832,6 +839,8 @@
                 this.exploded = false;
                 this.explodedAt = null;
                 this.hasStopped = false;
+                this.specialPowerUsed = false;
+                this.specialPowerActive = false;
 
                 const startChips = [
                     { type: INGREDIENTS.WHITE, value: 1 }, { type: INGREDIENTS.WHITE, value: 1 },
@@ -846,6 +855,7 @@
             prepareForNewRound() {
                 this.bag = [...this.inventory]; this.cauldron = []; this.exploded = false;
                 this.explodedAt = null;
+                this.specialPowerActive = false;
                 this.currentBrewValue = this.dropletPosition + this.ratTails;
                 this.currentWhiteValue = 0; this.hasStopped = false;
             }
@@ -1276,8 +1286,10 @@
                 document.getElementById('btn-choose-vp').addEventListener('click', () => { this.game.humanPlayer.victoryPoints += this.game.humanPlayer.roundVP; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
                 document.getElementById('btn-choose-money').addEventListener('click', () => { this.game.humanPlayer.money += this.game.humanPlayer.roundMoney; document.getElementById('explosion-modal').style.display = 'none'; this.startBuyingPhase(); });
                 
-                document.getElementById('btn-finish-buying').addEventListener('click', () => { 
-                    document.getElementById('shop-modal').style.display = 'none'; 
+                document.getElementById('btn-finish-buying')?.addEventListener('click', () => { 
+                    const shopModal = document.getElementById('shop-modal');
+                    if (shopModal) shopModal.style.display = 'none'; 
+                    this.game.humanPlayer.specialPowerActive = false; // Reset charm at end of shop phase
                     
                     // Queue the items bought during this shopping phase into the sack
                     this.shopCart.forEach((item) => {
@@ -1390,7 +1402,8 @@
                     const btn = document.createElement('div');
                     const isCurrent = (!isMandatory && this.game.humanPlayer && this.game.humanPlayer.character === charName);
                     
-                    btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(0,0,0,0.5); transition: border-color 0.2s; ${getCharacterSpriteStyle(charName, 'SMIRK')}`;
+                    btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(0,0,0,0.5); transition: border-color 0.2s; display: flex; align-items: center; justify-content: center; font-size: 3rem; ${getCharacterSpriteStyle(charName, 'SMIRK')}`;
+                    btn.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(charName);
                     
                     btn.addEventListener('click', () => {
                         setCookie('selectedCharacter', charName, 365);
@@ -1629,6 +1642,7 @@
                     const isWinner = (i === 0);
                     const faceMood = getPlayerMood(p, true, isWinner);
                     const faceStyle = getCharacterSpriteStyle(p.character, faceMood);
+                    const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(p.character);
                     
                     // Extract the converted amounts
                     const moneyVP = Math.floor(p.money / 5);
@@ -1638,7 +1652,7 @@
                     return `<div style="display: flex; flex-direction: column; padding: 10px 15px; background: ${i%2===0?'rgba(255,255,255,0.1)':'transparent'}; border-radius: 8px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 55px; height: 70px; border-radius: 50%; border: 2px solid ${isWinner ? 'gold' : '#666'}; ${faceStyle}"></div>
+                                <div style="width: 55px; height: 70px; border-radius: 50%; border: 2px solid ${isWinner ? 'gold' : '#666'}; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; overflow: hidden; ${faceStyle}">${emojiStr}</div>
                                 <span>${isWinner ? '👑 ' : ''}${p.name}</span>
                             </div>
                             <strong style="color: var(--accent); font-size: 1.2em;">${p.victoryPoints} ${t('vp', 'VP')}</strong>
@@ -1690,9 +1704,17 @@
                 this.shopCart = [];
                 this.game.players.forEach(p => {
                     if (!p.isHuman) { 
-                        // AI constantly buys droplets as long as it has at least 2 rubies
-                        while (p.rubies >= 2) {
-                            p.rubies -= 2;
+                        // AI Bard Power Logic
+                        if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
+                            p.specialPowerUsed = true;
+                            p.specialPowerActive = true;
+                        }
+                        const discount = p.specialPowerActive ? 1 : 0;
+                        const dropCost = Math.max(1, 2 - discount); // Floor at 1 to prevent infinite loops for AI
+
+                        // AI constantly buys droplets as long as it has enough rubies
+                        while (p.rubies >= dropCost) {
+                            p.rubies -= dropCost;
                             p.dropletPosition++;
                         }
 
@@ -1716,6 +1738,7 @@
                                 break; // Break out if no affordable items are left
                             }
                         }
+                        p.specialPowerActive = false; // Reset at end of their buying phase
                     }
                 });
                 this.renderShopUI(); document.getElementById('shop-modal').style.display = 'flex'; this.updateFullUI();
@@ -1728,8 +1751,12 @@
                 document.getElementById('shop-money-icon').style.cssText = `width: 24px; height: 24px; display: inline-block; margin-left: 5px; ${getUtilSpriteStyle('COIN')}`;
                 document.getElementById('shop-ruby-icon').style.cssText = `width: 24px; height: 24px; display: inline-block; ${getUtilSpriteStyle('RUBY')}`;
 
-                const shopItems = document.getElementById('shop-items'); shopItems.innerHTML = '';
+                const shopItems = document.getElementById('shop-items'); 
+                if (!shopItems) return;
+                shopItems.innerHTML = '';
+                
                 const cartColors = this.shopCart.map(c => c.type.id);
+                const discount = h.specialPowerActive ? 1 : 0;
                 
                 SHOP_CATALOG.forEach(item => {
                     if ((item.type.id === 'YELLOW' && this.game.round <= 2) || (item.type.id === 'BLUE' && this.game.round <= 3)) return;
@@ -1760,19 +1787,40 @@
 
                 // --- Special Ruby Upgrades ---
 
+                // 0. Bard's Charm Power
+                if (this.game.config.useCharacterPowers && h.character === 'BARD' && !h.specialPowerUsed) {
+                    const bardEl = document.createElement('div');
+                    bardEl.className = `shop-item ${h.specialPowerActive ? 'disabled' : ''}`;
+                    bardEl.innerHTML = `
+                        <div style="font-size: 2rem; display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; margin-bottom: 5px;">🪕</div>
+                        <div style="font-size: 0.8em; font-weight: bold;">Bard's Charm</div>
+                        <div style="font-size: 0.9em; color: #ff4444;">${t('cost', 'Cost:')} Free</div>
+                        <div class="tooltip">Charm the shopkeeper! Get a 1-Ruby discount on all Ruby upgrades this round. (Once per game)</div>
+                    `;
+                    if (!h.specialPowerActive) {
+                        bardEl.addEventListener('click', () => {
+                            h.specialPowerUsed = true;
+                            h.specialPowerActive = true;
+                            this.renderShopUI();
+                        });
+                    }
+                    shopItems.appendChild(bardEl);
+                }
+
                 // 1. Droplet Upgrade
+                const dropCost = Math.max(0, 2 - discount);
                 const dropletEl = document.createElement('div');
-                const canAffordDroplet = h.rubies >= 2;
+                const canAffordDroplet = h.rubies >= dropCost;
                 dropletEl.className = `shop-item ${!canAffordDroplet ? 'disabled' : ''}`;
                 dropletEl.innerHTML = `
                     <div style="width: 25px; height: 35px; ${getUtilSpriteStyle('DROPLET')}"></div>
                     <div style="font-size: 0.8em; font-weight: bold;">${t('shop_drop_title', 'Droplet Upgrade')}</div>
-                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} 2 <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ${getUtilSpriteStyle('RUBY')}"></span></div>
+                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} ${dropCost} <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ${getUtilSpriteStyle('RUBY')}"></span></div>
                     <div class="tooltip">${t('shop_drop_desc', 'Move your starting droplet forward by 1 space permanently. Can be purchased multiple times.')}</div>
                 `;
                 if (canAffordDroplet) {
                     dropletEl.addEventListener('click', () => {
-                        h.rubies -= 2;
+                        h.rubies -= dropCost;
                         h.dropletPosition++;
                         this.renderShopUI();
                     });
@@ -1780,18 +1828,19 @@
                 shopItems.appendChild(dropletEl);
 
                 // 2. Flask Refill
+                const flaskCost = Math.max(0, 2 - discount);
                 const flaskEl = document.createElement('div');
-                const canAffordFlask = h.rubies >= 2 && !h.flaskActive;
+                const canAffordFlask = h.rubies >= flaskCost && !h.flaskActive;
                 flaskEl.className = `shop-item ${!canAffordFlask ? 'disabled' : ''}`;
                 flaskEl.innerHTML = `
                     <div style="width: 25px; height: 35px; ${getUtilSpriteStyle(h.flaskActive ? 'FLASK_FULL' : 'FLASK_EMPTY')}"></div>
                     <div style="font-size: 0.8em; font-weight: bold;">${t('shop_flask_title', 'Refill Flask')}</div>
-                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} 2 <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ${getUtilSpriteStyle('RUBY')}"></span></div>
+                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} ${flaskCost} <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ${getUtilSpriteStyle('RUBY')}"></span></div>
                     <div class="tooltip">${h.flaskActive ? t('shop_flask_desc_full', 'Your flask is already full.') : t('shop_flask_desc_empty', 'Refill your empty flask so it can be used again.')}</div>
                 `;
                 if (canAffordFlask) {
                     flaskEl.addEventListener('click', () => {
-                        h.rubies -= 2;
+                        h.rubies -= flaskCost;
                         h.flaskActive = true;
                         this.renderShopUI();
                     });
@@ -1799,18 +1848,19 @@
                 shopItems.appendChild(flaskEl);
 
                 // 3. View Bag
+                const bagCost = Math.max(0, 1 - discount);
                 const bagEl = document.createElement('div');
-                const canAffordBag = h.rubies >= 1;
+                const canAffordBag = h.rubies >= bagCost;
                 bagEl.className = `shop-item ${!canAffordBag ? 'disabled' : ''}`;
                 bagEl.innerHTML = `
                     <div style="width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; ${getUtilSpriteStyle('SACK')}"></div>
                     <div style="font-size: 0.8em; font-weight: bold;">${t('shop_bag_view', 'View Bag')}</div>
-                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} 1 <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ${getUtilSpriteStyle('RUBY')}"></span></div>
+                    <div style="font-size: 0.9em; color: #ff4444; display: flex; align-items: center; justify-content: center;">${t('cost', 'Cost:')} ${bagCost === 0 ? 'Free' : bagCost + ' <span style="width: 16px; height: 16px; display: inline-block; margin-left: 4px; ' + getUtilSpriteStyle('RUBY') + '"></span>'}</div>
                     <div class="tooltip">${t('shop_bag_desc', 'Peek inside your bag to see all your tokens (played, unplayed, and newly purchased).')}</div>
                 `;
                 if (canAffordBag) {
                     bagEl.addEventListener('click', () => {
-                        h.rubies -= 1;
+                        h.rubies -= bagCost;
                         this.renderShopUI();
                         this.showBagModal(); // Calls default, which is human player
                     });
@@ -1966,15 +2016,15 @@
                     drawBubbling = true;
                     if (bubblingVid.paused) bubblingVid.play().catch(e => console.warn("Bubbling video play error:", e));
                 } else {
-                    if (!bubblingVid.paused) bubblingVid.pause();
+                    if (bubblingVid && !bubblingVid.paused) bubblingVid.pause();
                 }
 
                 // 1. Draw Background Image or Video
-                if (drawExplosion) {
+                if (drawExplosion && explosionVid) {
                     const scale = Math.min(w / explosionVid.videoWidth, h / explosionVid.videoHeight);
                     const dw = explosionVid.videoWidth * scale, dh = explosionVid.videoHeight * scale;
                     this.ctx.drawImage(explosionVid, (w - dw) / 2, (h - dh) / 2, dw, dh);
-                } else if (drawBubbling) {
+                } else if (drawBubbling && bubblingVid) {
                     const scale = Math.min(w / bubblingVid.videoWidth, h / bubblingVid.videoHeight);
                     const dw = bubblingVid.videoWidth * scale, dh = bubblingVid.videoHeight * scale;
                     this.ctx.drawImage(bubblingVid, (w - dw) / 2, (h - dh) / 2, dw, dh);
@@ -2248,7 +2298,11 @@
 
                 // Update human character face box based on their mood
                 const humanMood = getPlayerMood(human);
-                document.getElementById('ui-human-face').style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5); ${getCharacterSpriteStyle(human.character, humanMood)}`;
+                const humanFaceEl = document.getElementById('ui-human-face');
+                if (humanFaceEl) {
+                    humanFaceEl.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; ${getCharacterSpriteStyle(human.character, humanMood)}`;
+                    humanFaceEl.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(human.character);
+                }
 
                 document.getElementById('ui-phase').innerText = `(${t('ui_phase_prefix', 'Phase:')} ${t('phase_' + this.game.phase.toLowerCase(), this.game.phase)})`;
                 document.getElementById('ui-round').innerText = this.game.round;
@@ -2340,53 +2394,56 @@
                 }
 
                 const playerListEl = document.getElementById('player-list'); 
-                if (playerListEl) playerListEl.innerHTML = ''; 
-                this.game.players.forEach(player => {
-                    const status = player.exploded ? t('status_exploded', "EXPLODED!") : (player.hasStopped ? t('status_finished', "Finished") : t('status_brewing', "Brewing..."));
-                    const card = document.createElement('div'); card.className = 'player-card';
-                    
-                    const pRewards = this.getProjectedRewards(player);
-                    const pMood = getPlayerMood(player);
-                    const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
-                    
-                    let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} <span dir="ltr" style="display: inline-flex; align-items: center;">`;
-                    if (pRewards.vp > 0) {
-                        brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
-                    }
-                    brewHtml += `<strong style="color: gold; margin-left: 5px;">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
-                    if (pRewards.rubies > 0) {
-                        if (pRewards.rubies > 1) {
-                            brewHtml += `<span style="color: #ff4444; margin-left: 8px;">${pRewards.rubies}</span>`;
+                if (playerListEl) {
+                    playerListEl.innerHTML = ''; 
+                    this.game.players.forEach(player => {
+                        const status = player.exploded ? t('status_exploded', "EXPLODED!") : (player.hasStopped ? t('status_finished', "Finished") : t('status_brewing', "Brewing..."));
+                        const card = document.createElement('div'); card.className = 'player-card';
+                        
+                        const pRewards = this.getProjectedRewards(player);
+                        const pMood = getPlayerMood(player);
+                        const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
+                        const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(player.character);
+                        
+                        let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} <span dir="ltr" style="display: inline-flex; align-items: center;">`;
+                        if (pRewards.vp > 0) {
+                            brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
                         }
-                        brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
-                    }
-                    brewHtml += `</span></div>`;
-
-                    card.innerHTML = `
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); ${pFaceStyle}"></div>
-                            <div style="flex: 1;">
-                                <strong>${player.name}</strong>
-                                <div style="font-size: 0.9em; margin-top: 5px;">
-                                    <div>${t('vp', 'VP')}: ${player.victoryPoints} | ${t('ruby_plural', 'Rubies')}: ${player.rubies}</div>
-                                    ${brewHtml}
-                                    <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}">${status}</div>
-                                </div>
-                            </div>
-                        </div>`;
-                    
-                    if (this.isDebug) {
-                        card.style.cursor = 'pointer';
-                        card.title = t('msg_debug_bag', "Shift-click to peek at bag (Debug)");
-                        card.addEventListener('click', (e) => {
-                            if (e.shiftKey) {
-                                this.showBagModal(player);
+                        brewHtml += `<strong style="color: gold; margin-left: 5px;">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
+                        if (pRewards.rubies > 0) {
+                            if (pRewards.rubies > 1) {
+                                brewHtml += `<span style="color: #ff4444; margin-left: 8px;">${pRewards.rubies}</span>`;
                             }
-                        });
-                    }
+                            brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
+                        }
+                        brewHtml += `</span></div>`;
 
-                    if (playerListEl) playerListEl.appendChild(card);
-                });
+                        card.innerHTML = `
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; ${pFaceStyle}">${emojiStr}</div>
+                                <div style="flex: 1;">
+                                    <strong>${player.name}</strong>
+                                    <div style="font-size: 0.9em; margin-top: 5px;">
+                                        <div>${t('vp', 'VP')}: ${player.victoryPoints} | ${t('ruby_plural', 'Rubies')}: ${player.rubies}</div>
+                                        ${brewHtml}
+                                        <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}">${status}</div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        
+                        if (this.isDebug) {
+                            card.style.cursor = 'pointer';
+                            card.title = t('msg_debug_bag', "Shift-click to peek at bag (Debug)");
+                            card.addEventListener('click', (e) => {
+                                if (e.shiftKey) {
+                                    this.showBagModal(player);
+                                }
+                            });
+                        }
+
+                        playerListEl.appendChild(card);
+                    });
+                }
             }
         }
 
