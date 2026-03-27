@@ -298,7 +298,7 @@
                 </div>
             </div>
             <div class="board-sections">
-                <div class="board-section" id="human-character" title="Click to change character">
+                <div class="board-section" id="human-character" data-i18n-title="tooltip_change_char" title="Click to change character">
                     <div id="ui-human-face" style="width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5);"></div>
                 </div>
                 <div class="board-section" id="flask-section" style="justify-content: center;">
@@ -373,6 +373,14 @@
                 <option value="1" data-i18n="settings_set1">Set 1 (Beginner Friendly)</option>
                 <option value="2" data-i18n="settings_set2">Set 2 (Advanced Strategies)</option>
             </select>
+
+            <div style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="settings-powers-checkbox" style="width: 20px; height: 20px; cursor: pointer;">
+                    <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_char_powers">Character Powers</strong>
+                </label>
+                <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_char_powers_desc">Enable unique special abilities for each character.</p>
+            </div>
 
             <button id="btn-close-settings" style="background-color: #4a4e69; margin-top: 25px; width: 100%;" data-i18n="btn_done">Done</button>
         </div>
@@ -501,7 +509,7 @@
         };
 
         // Global mutable variables for localized text
-        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG;
+        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG, CHARACTER_POWERS;
 
         function initGameData() {
             INGREDIENTS = {
@@ -657,6 +665,19 @@
                 { type: INGREDIENTS.BLUE, value: 1, cost: 5 }, { type: INGREDIENTS.BLUE, value: 4, cost: 19 },
                 { type: INGREDIENTS.PURPLE, value: 1, cost: 9 }, { type: INGREDIENTS.BLACK, value: 1, cost: 10 }
             ];
+
+            const defaultPower = { 
+                applyStart: (p) => {
+                p.inventory.push({ type: INGREDIENTS.YELLOW, value: 1 });
+                if (p.isHuman && p.game.uiManager) {
+                    p.game.uiManager.queueSackAnimation({ typeId: 'YELLOW', value: 1, color: INGREDIENTS.YELLOW.color, textCol: INGREDIENTS.YELLOW.textCol });
+                }
+                } 
+            };
+            CHARACTER_POWERS = {
+                WITCH: defaultPower, WIZARD: defaultPower, MONK: defaultPower, CHILD: defaultPower,
+                PRINCESS: defaultPower, VOODOO_LADY: defaultPower, BARD: defaultPower, GARDENER: defaultPower
+            };
         }
 
         // --- Cookie Helpers ---
@@ -881,7 +902,7 @@
 
         class GameController {
             constructor(config) {
-                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, ...config };
+                this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, useCharacterPowers: false, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; 
                 this.books = this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
             }
@@ -909,6 +930,16 @@
                     const localizedCharName = typeof t === 'function' ? t(charNameKey, fallbackName) : fallbackName;
                     
                     this.players.push(new QuacksPlayer(`${localizedCharName}`, false, this, charId));
+                }
+
+                // Apply character powers if enabled
+                if (this.config.useCharacterPowers) {
+                    this.players.forEach(p => {
+                        const power = CHARACTER_POWERS[p.character];
+                        if (power && power.applyStart) {
+                            power.applyStart(p);
+                        }
+                    });
                 }
             }
 
@@ -1438,7 +1469,19 @@
                     this.updateFullUI();
                 };
                 
-                document.getElementById('settings-modal').style.display = 'flex';
+                // Character Powers Setting
+                const powersCheckbox = document.getElementById('settings-powers-checkbox');
+                if (powersCheckbox) {
+                    powersCheckbox.checked = this.game.config.useCharacterPowers || false;
+                    powersCheckbox.onchange = (e) => {
+                        const val = e.target.checked;
+                        setCookie('useCharacterPowers', val ? '1' : '0', 365);
+                        this.game.config.useCharacterPowers = val;
+                    };
+                }
+
+                const modal = document.getElementById('settings-modal');
+                if (modal) modal.style.display = 'flex';
             }
 
             showBookModal() {
@@ -2395,7 +2438,8 @@
 
             // 3. Boot Game and Check Character Selection
             const savedBookSet = parseInt(getCookie('selectedBookSet')) || 1;
-            const gameConfig = { numAIs: 2, bookSet: savedBookSet }; 
+            const savedPowers = getCookie('useCharacterPowers') === '1';
+            const gameConfig = { numAIs: 2, bookSet: savedBookSet, useCharacterPowers: savedPowers }; 
             const gameController = new GameController(gameConfig);
             const uiManager = new QuacksUIManager(gameController, window.GAME_ASSETS);
             

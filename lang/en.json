@@ -29,6 +29,7 @@
   "modal_settings_rules_desc": "Choose which set of powers the ingredients have.",
   "settings_set1": "Set 1 (Beginner Friendly)",
   "settings_set2": "Set 2 (Advanced Strategies)",
+  "settings_char_powers_desc": "Enable unique special abilities for each character.",
   "modal_book_title": "📖 Ingredient Rules",
   "modal_book_desc": "Current active ingredient powers.",
   "modal_help_title": "❓ How to play OpenQuacks ❓",

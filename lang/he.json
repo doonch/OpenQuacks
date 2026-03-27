@@ -24,6 +24,7 @@
   "modal_settings_title": "⚙️ הגדרות",
   "modal_settings_char": "בחירת דמות",
   "modal_char_select_title": "🎭 בחר/י דמות",
+  "tooltip_change_char": "החלף דמות",
   "modal_char_select_desc": "בחר את הדמות שלך למשחק זה.",
   "modal_settings_rules": "ערכת חוקי מרכיבים",
   "modal_settings_rules_desc": "בחר איזו ערכת כוחות תהיה למרכיבים.",
