@@ -323,6 +323,9 @@
                         <button id="btn-voodoo-sac" style="display: none; width: 70px; height: 70px; border-radius: 50%; font-size: 1.5rem; padding: 0; background-color: #e63946; border: 2px solid var(--panel-border); cursor: pointer;" data-i18n-title="tooltip_voodoo_sac" title="Voodoo sacrifice: remove a boomberry from your bag">
                             <div id="ui-voodoo-sac-icon" style="width: 100%; height: 100%;"></div>
                         </button>
+                        <button id="btn-phantom-clone" style="display: none; width: 70px; height: 70px; border-radius: 50%; font-size: 1.5rem; padding: 0; background-color: #8a2be2; border: 2px solid var(--panel-border); cursor: pointer;" data-i18n-title="tooltip_phantom_clone" title="Phantom clone: play two phantom copies of the last played token">
+                            <div id="ui-phantom-clone-icon" style="width: 100%; height: 100%;"></div>
+                        </button>
                     </div>
                 </div>
                 <div class="board-section" id="fortune-teller">
@@ -730,7 +733,7 @@
                 } 
             };
             CHARACTER_POWERS = {
-                WITCH: defaultPower, WIZARD: defaultPower, MONK: {}, CHILD: {},
+                WITCH: defaultPower, WIZARD: {}, MONK: {}, CHILD: {},
                 PRINCESS: {}, VOODOO_LADY: {}, BARD: {}, GARDENER: {}
             };
         }
@@ -812,7 +815,8 @@
         const UTILS_EXP_MAP = {
             WATERING_CAN: { x: 0, y: 0, w: 0.5, h: 0.5 },
             LOLLIPOP: { x: 0.5, y: 0, w: 0.5, h: 0.5 },
-            SKULL: { x: 0, y: 0.5, w: 0.5, h: 0.5 }
+            SKULL: { x: 0, y: 0.5, w: 0.5, h: 0.5 },
+            WIZARD_HAT: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }
         };
 
         // 8x4 Grid Constants for Characters
@@ -1110,6 +1114,31 @@
                             p.inventory.splice(p.inventory.indexOf(w), 1);
                             p.inventory.splice(p.inventory.indexOf(nwToken), 1);
                             break;
+                        }
+                    }
+                }
+
+                // AI Wizard Power Logic
+                if (this.config.useCharacterPowers && p.character === 'WIZARD' && !p.specialPowerUsed && this.phase === 'Brewing') {
+                    if (p.cauldron.length > 0) {
+                        const lastChip = p.cauldron[p.cauldron.length - 1];
+                        if (lastChip.type.id !== 'WHITE' && lastChip.value >= 2) {
+                            p.specialPowerUsed = true;
+                            // Clone 1
+                            let np = p.currentBrewValue + lastChip.value;
+                            let clone1 = { ...lastChip, spaceIndex: np, drawnAt: Date.now() };
+                            p.cauldron.push(clone1);
+                            p.currentBrewValue = np;
+                            let book = this.books[clone1.type.id];
+                            if (book && book.immediate) book.immediate(p, clone1);
+
+                            // Clone 2
+                            np = p.currentBrewValue + lastChip.value;
+                            let clone2 = { ...lastChip, spaceIndex: np, drawnAt: Date.now() + 100 };
+                            p.cauldron.push(clone2);
+                            p.currentBrewValue = np;
+                            book = this.books[clone2.type.id];
+                            if (book && book.immediate) book.immediate(p, clone2);
                         }
                     }
                 }
@@ -1430,6 +1459,49 @@
                     const h = this.game.humanPlayer;
                     if (this.game.config.useCharacterPowers && h.character === 'VOODOO_LADY' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
                         this.showVoodooSacModal();
+                    }
+                });
+
+                document.getElementById('btn-phantom-clone').addEventListener('click', async () => {
+                    const h = this.game.humanPlayer;
+                    if (this.game.config.useCharacterPowers && h.character === 'WIZARD' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && h.cauldron.length > 0) {
+                        h.specialPowerUsed = true;
+                        const lastChip = h.cauldron[h.cauldron.length - 1];
+                        const wasExploded = h.exploded;
+
+                        // Clone 1
+                        let newPosition = h.currentBrewValue + lastChip.value;
+                        let placedChip1 = { ...lastChip, spaceIndex: newPosition, drawnAt: Date.now() };
+                        h.cauldron.push(placedChip1);
+                        h.currentBrewValue = newPosition;
+                        if (placedChip1.type.id === 'WHITE') h.currentWhiteValue += placedChip1.value;
+                        let book = this.game.books[placedChip1.type.id];
+                        if (book && book.immediate) book.immediate(h, placedChip1);
+
+                        // Clone 2
+                        newPosition = h.currentBrewValue + lastChip.value;
+                        let placedChip2 = { ...lastChip, spaceIndex: newPosition, drawnAt: Date.now() + 100 };
+                        h.cauldron.push(placedChip2);
+                        h.currentBrewValue = newPosition;
+                        if (placedChip2.type.id === 'WHITE') h.currentWhiteValue += placedChip2.value;
+                        book = this.game.books[placedChip2.type.id];
+                        if (book && book.immediate) book.immediate(h, placedChip2);
+
+                        const currentThreshold = this.game.config.explosionThreshold + (h.explosionLimitOffset || 0);
+                        if (h.currentWhiteValue > currentThreshold) { 
+                            h.exploded = true; 
+                            h.explodedAt = Date.now();
+                            h.hasStopped = true; 
+                        }
+
+                        this.updateFullUI();
+                        
+                        if (!wasExploded && h.exploded) {
+                            await this.playExplosionVideo();
+                        }
+                        if (h.exploded || h.hasStopped) {
+                            this.game.checkBrewingPhaseEnd();
+                        }
                     }
                 });
 
@@ -2945,6 +3017,28 @@
                     } else {
                         vsBtn.style.display = 'none';
                     }
+                }
+
+                // Phantom Clone Button Logic (Wizard)
+                const pcBtn = document.getElementById('btn-phantom-clone');
+                const pcIcon = document.getElementById('ui-phantom-clone-icon');
+                if (this.game.config.useCharacterPowers && human.character === 'WIZARD' && !human.specialPowerUsed && !human.hasStopped && !human.exploded && this.game.phase === 'Brewing') {
+                    pcBtn.style.display = 'block';
+                    
+                    const hasTokens = human.cauldron.length > 0;
+                    pcBtn.disabled = !hasTokens;
+                    pcBtn.style.opacity = hasTokens ? '1' : '0.5';
+                    pcBtn.style.cursor = hasTokens ? 'pointer' : 'not-allowed';
+
+                    if (this.assets.UTILS_EXP && this.assets.UTILS_EXP.naturalWidth > 0) {
+                        pcIcon.style.cssText = `width: 100%; height: 100%; ${getUtilExpSpriteStyle('WIZARD_HAT')}`;
+                        pcIcon.innerText = '';
+                    } else {
+                        pcIcon.style.cssText = `width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;`;
+                        pcIcon.innerText = '🧙‍♂️';
+                    }
+                } else {
+                    pcBtn.style.display = 'none';
                 }
 
                 const playerListEl = document.getElementById('player-list'); 
