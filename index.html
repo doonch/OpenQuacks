@@ -320,6 +320,9 @@
                         <button id="btn-sugar-rush" style="display: none; width: 70px; height: 70px; border-radius: 50%; font-size: 1.5rem; padding: 0; background-color: #ff007f; border: 2px solid var(--panel-border); cursor: pointer;" data-i18n-title="tooltip_sugar_rush" title="Sugar Rush: Once per game, peek at 5 tokens!">
                             <div id="ui-sugar-rush-icon" style="width: 100%; height: 100%;"></div>
                         </button>
+                        <button id="btn-voodoo-sac" style="display: none; width: 70px; height: 70px; border-radius: 50%; font-size: 1.5rem; padding: 0; background-color: #e63946; border: 2px solid var(--panel-border); cursor: pointer;" data-i18n-title="tooltip_voodoo_sac" title="Voodoo sacrifice: remove a boomberry from your bag">
+                            <div id="ui-voodoo-sac-icon" style="width: 100%; height: 100%;"></div>
+                        </button>
                     </div>
                 </div>
                 <div class="board-section" id="fortune-teller">
@@ -513,6 +516,20 @@
                 <!-- Tokens injected here via JS -->
             </div>
             <button id="btn-close-sugar-rush" style="background-color: #4caf50;" data-i18n="btn_done">Done</button>
+        </div>
+    </div>
+
+    <div id="voodoo-sac-modal" class="modal-overlay" style="z-index: 1008;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2 data-i18n="modal_voodoo_sac_title">☠️ Voodoo Sacrifice</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;" data-i18n="modal_voodoo_sac_desc">Select a white token and a non-white token of greater value to remove.</p>
+            <div id="voodoo-sac-items" style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 20px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <!-- Tokens injected here via JS -->
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-close-voodoo-sac" style="background-color: #e63946;" data-i18n="btn_done" disabled>Done</button>
+                <button id="btn-cancel-voodoo-sac" style="background-color: #4a4e69;" data-i18n="btn_cancel">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -714,7 +731,7 @@
             };
             CHARACTER_POWERS = {
                 WITCH: defaultPower, WIZARD: defaultPower, MONK: {}, CHILD: {},
-                PRINCESS: {}, VOODOO_LADY: defaultPower, BARD: {}, GARDENER: {}
+                PRINCESS: {}, VOODOO_LADY: {}, BARD: {}, GARDENER: {}
             };
         }
 
@@ -793,8 +810,9 @@
         };
 
         const UTILS_EXP_MAP = {
-            WATERING_CAN: { x: 0, y: 0, w: 0.5, h: 1 },
-            LOLLIPOP: { x: 0.5, y: 0, w: 0.5, h: 1 }
+            WATERING_CAN: { x: 0, y: 0, w: 0.5, h: 0.5 },
+            LOLLIPOP: { x: 0.5, y: 0, w: 0.5, h: 0.5 },
+            SKULL: { x: 0, y: 0.5, w: 0.5, h: 0.5 }
         };
 
         // 8x4 Grid Constants for Characters
@@ -1074,6 +1092,24 @@
                         if (upgradeMap[key] && !upgradedColors.includes(item.type.id)) {
                             item.value = upgradeMap[key];
                             upgradedColors.push(item.type.id);
+                        }
+                    }
+                }
+                
+                // AI Voodoo Lady Power Logic
+                if (this.config.useCharacterPowers && p.character === 'VOODOO_LADY' && !p.specialPowerUsed && this.phase === 'Brewing') {
+                    // Try to aggressively sacrifice highest white possible
+                    const bagWhites = p.bag.filter(c => c.type.id === 'WHITE').sort((a,b) => b.value - a.value);
+                    for (let w of bagWhites) {
+                        const neededVal = w.value * 2;
+                        const nwToken = p.bag.find(c => c.type.id !== 'WHITE' && c.value === neededVal);
+                        if (nwToken) {
+                            p.specialPowerUsed = true;
+                            p.bag.splice(p.bag.indexOf(w), 1);
+                            p.bag.splice(p.bag.indexOf(nwToken), 1);
+                            p.inventory.splice(p.inventory.indexOf(w), 1);
+                            p.inventory.splice(p.inventory.indexOf(nwToken), 1);
+                            break;
                         }
                     }
                 }
@@ -1390,6 +1426,13 @@
                     }
                 });
 
+                document.getElementById('btn-voodoo-sac')?.addEventListener('click', () => {
+                    const h = this.game.humanPlayer;
+                    if (this.game.config.useCharacterPowers && h.character === 'VOODOO_LADY' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
+                        this.showVoodooSacModal();
+                    }
+                });
+
                 document.getElementById('btn-choose-vp')?.addEventListener('click', () => { 
                     this.game.humanPlayer.victoryPoints += this.game.humanPlayer.roundVP; 
                     const expModal = document.getElementById('explosion-modal');
@@ -1679,6 +1722,116 @@
                 }
                 
                 document.getElementById('sugar-rush-modal').style.display = 'flex';
+            }
+
+            showVoodooSacModal() {
+                const h = this.game.humanPlayer;
+                const container = document.getElementById('voodoo-sac-items');
+                if (!container) return;
+                
+                let selectedWhite = null;
+                let selectedNonWhite = null;
+
+                const bagItems = h.bag.filter(item => 
+                    item.type.id === 'WHITE' || (item.type.id !== 'WHITE' && item.value > 1)
+                );
+
+                bagItems.sort((a, b) => {
+                    if (a.type.id === 'WHITE' && b.type.id !== 'WHITE') return -1;
+                    if (a.type.id !== 'WHITE' && b.type.id === 'WHITE') return 1;
+                    if (a.type.id === b.type.id) return a.value - b.value;
+                    return a.type.id.localeCompare(b.type.id);
+                });
+
+                const updateView = () => {
+                    container.innerHTML = '';
+                    bagItems.forEach((item) => {
+                        const isWhite = item.type.id === 'WHITE';
+                        const isSelected = (isWhite && selectedWhite === item) || (!isWhite && selectedNonWhite === item);
+                        
+                        let isClickable = true;
+                        
+                        if (isWhite) {
+                            if (selectedWhite && selectedWhite !== item) isClickable = false;
+                            if (selectedNonWhite && item.value * 2 !== selectedNonWhite.value) isClickable = false;
+                        } else {
+                            if (selectedNonWhite && selectedNonWhite !== item) isClickable = false;
+                            if (selectedWhite && item.value !== selectedWhite.value * 2) isClickable = false;
+                        }
+
+                        const el = document.createElement('div');
+                        el.className = 'chip-icon';
+                        const chipStyle = getChipSpriteStyle(item.type.id, item.value);
+                        el.style.cssText = `width: 50px; height: 50px; transition: transform 0.1s, opacity 0.2s; ${chipStyle || `background-color: ${item.type.color};`}`;
+                        
+                        if (!chipStyle) {
+                            el.innerText = item.value;
+                            el.style.color = item.type.textCol;
+                        }
+
+                        if (isClickable) {
+                            el.style.cursor = 'pointer';
+                            el.style.opacity = '1';
+                        } else {
+                            el.style.cursor = 'not-allowed';
+                            el.style.opacity = '0.3';
+                        }
+
+                        if (isSelected) {
+                            el.style.transform = 'scale(1.1)';
+                            el.style.boxShadow = '0 0 10px gold';
+                            el.style.border = '2px solid gold';
+                        }
+
+                        if (isClickable) {
+                            el.onclick = () => {
+                                if (isSelected) {
+                                    if (isWhite) selectedWhite = null;
+                                    else selectedNonWhite = null;
+                                } else {
+                                    if (isWhite) selectedWhite = item;
+                                    else selectedNonWhite = item;
+                                }
+                                updateView();
+                            };
+                        }
+                        container.appendChild(el);
+                    });
+
+                    const doneBtn = document.getElementById('btn-close-voodoo-sac');
+                    if (doneBtn) {
+                        doneBtn.disabled = !(selectedWhite && selectedNonWhite);
+                    }
+                };
+
+                updateView();
+
+                const doneBtn = document.getElementById('btn-close-voodoo-sac');
+                if (doneBtn) {
+                    const newBtn = doneBtn.cloneNode(true);
+                    doneBtn.parentNode.replaceChild(newBtn, doneBtn);
+                    newBtn.onclick = () => {
+                        if (selectedWhite && selectedNonWhite) {
+                            h.bag.splice(h.bag.indexOf(selectedWhite), 1);
+                            h.bag.splice(h.bag.indexOf(selectedNonWhite), 1);
+                            h.inventory.splice(h.inventory.indexOf(selectedWhite), 1);
+                            h.inventory.splice(h.inventory.indexOf(selectedNonWhite), 1);
+
+                            h.specialPowerUsed = true;
+                            document.getElementById('voodoo-sac-modal').style.display = 'none';
+                            this.updateFullUI();
+                        }
+                    };
+                }
+                
+                const cancelBtn = document.getElementById('btn-cancel-voodoo-sac');
+                if (cancelBtn) {
+                    cancelBtn.onclick = () => {
+                        document.getElementById('voodoo-sac-modal').style.display = 'none';
+                    };
+                }
+
+                document.getElementById('voodoo-sac-modal').style.display = 'flex';
             }
 
             showCharacterSelect(isMandatory = false) {
@@ -2767,6 +2920,30 @@
                         }
                     } else {
                         srBtn.style.display = 'none';
+                    }
+                }
+
+                // Voodoo Sacrifice Button Logic (Voodoo Lady)
+                const vsBtn = document.getElementById('btn-voodoo-sac');
+                const vsIcon = document.getElementById('ui-voodoo-sac-icon');
+                if (vsBtn && vsIcon) {
+                    if (this.game.config.useCharacterPowers && human.character === 'VOODOO_LADY' && !human.specialPowerUsed && !human.hasStopped && !human.exploded && this.game.phase === 'Brewing') {
+                        vsBtn.style.display = 'block';
+                        
+                        const hasValidNonWhite = human.bag.some(item => item.type.id !== 'WHITE' && item.value > 1);
+                        vsBtn.disabled = !hasValidNonWhite;
+                        vsBtn.style.opacity = hasValidNonWhite ? '1' : '0.5';
+                        vsBtn.style.cursor = hasValidNonWhite ? 'pointer' : 'not-allowed';
+
+                        if (this.assets.UTILS_EXP && this.assets.UTILS_EXP.naturalWidth > 0) {
+                            vsIcon.style.cssText = `width: 100%; height: 100%; ${getUtilExpSpriteStyle('SKULL')}`;
+                            vsIcon.innerText = '';
+                        } else {
+                            vsIcon.style.cssText = `width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;`;
+                            vsIcon.innerText = '💀';
+                        }
+                    } else {
+                        vsBtn.style.display = 'none';
                     }
                 }
 
