@@ -214,6 +214,14 @@
             animation: flip-vertical 0.4s ease-in-out;
         }
 
+        @keyframes toast-pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .toast-animate {
+            animation: toast-pop 0.3s ease-out forwards;
+        }
+
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -300,6 +308,7 @@
             <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
                 <span><span data-i18n="ui_day">Day</span> <span id="ui-round">1</span> <span data-i18n="ui_of_9">of 9</span> <span id="ui-phase" style="font-size: 0.9rem; color: #aaa; margin-left: 10px;">(<span data-i18n="ui_phase_prefix">Phase:</span> <span data-i18n="phase_brewing">Brewing</span>)</span></span>
                 <div style="display: flex; gap: 5px; margin-left: auto;">
+                    <button id="btn-achievements" style="display: none; width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #f6aa1c; font-size: 0.9rem; align-items: center; justify-content: center; flex: none;" data-i18n-title="tooltip_achievements" title="Achievements">⭐</button>
                     <button id="btn-book" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #800080; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" data-i18n-title="tooltip_book" title="Ingredient Rules">📖</button>
                     <button id="btn-lang" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #6a6e8f; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" data-i18n-title="tooltip_language" title="Language">🇺🇸</button>
                     <button id="btn-settings" style="width: 24px; height: 24px; padding: 0; border-radius: 4px; background-color: #6a6e8f; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; flex: none;" data-i18n-title="tooltip_settings" title="Settings">⚙️</button>
@@ -357,6 +366,14 @@
                 <div id="ui-bag-count">0</div>
             </div>
 
+            <div id="achievement-toast" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 50; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; border-radius: 8px;">
+                <div class="toast-animate">
+                    <div style="font-size: 4rem; margin-bottom: 10px;">🏆</div>
+                    <h2 id="toast-title" style="color: gold; font-size: 1.8rem; margin-bottom: 10px; font-weight: bold;">Achievement Unlocked!</h2>
+                    <p id="toast-desc" style="font-size: 1.2rem; color: #ddd;"></p>
+                </div>
+            </div>
+
             <canvas id="cauldron-canvas"></canvas>
             <video id="explosion-video" src="assets/explosion.mov" playsinline preload="auto" style="display: none;"></video>
             <video id="bubbling-video" src="assets/cauldron_bubble1.mov" playsinline preload="auto" loop style="display: none;"></video>
@@ -364,6 +381,16 @@
     </div>
 
     <!-- Modals -->
+    <div id="achievements-modal" class="modal-overlay" style="z-index: 1008;">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 data-i18n="modal_achievements_title">🌟 Achievements</h2>
+            <div id="achievements-list" style="display: flex; flex-direction: column; gap: 12px; text-align: start; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; max-height: 50vh; overflow-y: auto;">
+                <!-- Filled via JS -->
+            </div>
+            <button id="btn-close-achievements" style="background-color: #4a4e69; margin-top: 15px; width: 100%;" data-i18n="btn_done">Done</button>
+        </div>
+    </div>
+
     <div id="char-select-modal" class="modal-overlay" style="z-index: 1009;">
         <div class="modal-content" style="max-width: 400px;">
             <h2 data-i18n="modal_char_select_title">🎭 Select Your Character</h2>
@@ -570,7 +597,7 @@
         };
 
         // Global mutable variables for localized text
-        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG, CHARACTER_POWERS;
+        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
 
         function initGameData() {
             INGREDIENTS = {
@@ -730,6 +757,15 @@
             CHARACTER_POWERS = {
                 WITCH: {}, WIZARD: {}, MONK: {}, CHILD: {},
                 PRINCESS: {}, VOODOO_LADY: {}, BARD: {}, GARDENER: {}
+            };
+
+            ACHIEVEMENTS_DEF = {
+                'MEGA_PUMPKIN': { titleKey: 'ach_mega_pumpkin_title', defaultTitle: 'Mega Pumpkin', descKey: 'ach_mega_pumpkin_desc', defaultDesc: 'Purchase a pumpkin 6 token' },
+                'POINT_MAXXING': { titleKey: 'ach_point_maxxing_title', defaultTitle: 'Point Maxxing', descKey: 'ach_point_maxxing_desc', defaultDesc: 'Win a game with more than 70 points as any character' },
+                'KABOOM': { titleKey: 'ach_kaboom_title', defaultTitle: 'Kaboom!', descKey: 'ach_kaboom_desc', defaultDesc: 'Explode with 18 boomberries in your cauldron' },
+                'TIE_FIGHTER': { titleKey: 'ach_tie_fighter_title', defaultTitle: 'Tie Fighter', descKey: 'ach_tie_fighter_desc', defaultDesc: 'Win a 3-way tie breaker' },
+                'BIG_SPENDER': { titleKey: 'ach_big_spender_title', defaultTitle: 'Big Spender', descKey: 'ach_big_spender_desc', defaultDesc: 'Spend more than 56 coins in the shop' },
+                'META_CHARLATAN': { titleKey: 'ach_meta_charlatan_title', defaultTitle: 'Meta-charlatan', descKey: 'ach_meta_charlatan_desc', defaultDesc: 'Place a token using the debug draw dialog.' }
             };
         }
 
@@ -911,6 +947,7 @@
                 this.specialPowerUsed = false;
                 this.specialPowerActive = false;
                 this.explosionLimitOffset = 0;
+                this.moneySpentThisRound = 0;
 
                 const startChips = [
                     { type: INGREDIENTS.WHITE, value: 1 }, { type: INGREDIENTS.WHITE, value: 1 },
@@ -929,6 +966,7 @@
                 this.explosionLimitOffset = 0;
                 this.currentBrewValue = this.dropletPosition + this.ratTails;
                 this.currentWhiteValue = 0; this.hasStopped = false;
+                this.moneySpentThisRound = 0;
             }
 
             buyChip(t, v, cost) {
@@ -1279,6 +1317,11 @@
                 this.isWitchBonusDie = false;
                 
                 this.isDebug = window.location.href.includes('debug=1');
+                this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
+
+                if (Object.keys(this.unlockedAchievements).length > 0) {
+                    document.getElementById('btn-achievements').style.display = 'flex';
+                }
 
                 // Initialize the monocle icon style BEFORE resizing so it persists
                 const monocleEl = document.getElementById('ui-monocle-icon');
@@ -1289,6 +1332,59 @@
                 this.bindEvents(); 
                 this.handleResize();
                 this.startAnimationLoop(); // Continuous loop for fades
+            }
+
+            unlockAchievement(id) {
+                if (this.unlockedAchievements[id]) return;
+
+                this.unlockedAchievements[id] = {
+                    date: new Date().toLocaleDateString(),
+                    char: this.game.humanPlayer.character,
+                    set: this.game.config.bookSet,
+                    powers: this.game.config.useCharacterPowers ? t('ach_yes', 'Yes') : t('ach_no', 'No')
+                };
+
+                setCookie('quacks_achievements', JSON.stringify(this.unlockedAchievements), 365);
+
+                document.getElementById('btn-achievements').style.display = 'flex';
+
+                const def = ACHIEVEMENTS_DEF[id];
+                document.getElementById('toast-title').innerText = `${t('ach_unlocked', 'Achievement Unlocked:')} ${t(def.titleKey, def.defaultTitle)}`;
+                document.getElementById('toast-desc').innerText = t(def.descKey, def.defaultDesc);
+
+                const toast = document.getElementById('achievement-toast');
+                toast.style.display = 'flex';
+                setTimeout(() => { toast.style.display = 'none'; }, 4000);
+            }
+
+            showAchievementsModal() {
+                const listEl = document.getElementById('achievements-list');
+                listEl.innerHTML = '';
+
+                Object.keys(this.unlockedAchievements).forEach(id => {
+                    const data = this.unlockedAchievements[id];
+                    const def = ACHIEVEMENTS_DEF[id];
+
+                    const charNameKey = 'char_' + data.char.toLowerCase();
+                    const fallbackName = data.char.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
+                    const localizedCharName = t(charNameKey, fallbackName);
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.style.cssText = "background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 4px solid gold;";
+                    itemDiv.innerHTML = `
+                        <h3 style="color: gold; margin-bottom: 5px; font-size: 1.1rem;">${t(def.titleKey, def.defaultTitle)}</h3>
+                        <p style="font-size: 0.9rem; color: #ddd; margin-bottom: 8px;">${t(def.descKey, def.defaultDesc)}</p>
+                        <div style="font-size: 0.8rem; color: #aaa; display: flex; gap: 15px; flex-wrap: wrap;">
+                            <span>📅 ${t('ach_date', 'Date:')} ${data.date}</span>
+                            <span>🎭 ${t('ach_char', 'Character:')} ${localizedCharName}</span>
+                            <span>📖 ${t('ach_set', 'Rules Set:')} ${data.set}</span>
+                            <span>✨ ${t('ach_powers', 'Powers:')} ${data.powers}</span>
+                        </div>
+                    `;
+                    listEl.appendChild(itemDiv);
+                });
+
+                document.getElementById('achievements-modal').style.display = 'flex';
             }
 
             startAnimationLoop() {
@@ -1340,7 +1436,6 @@
             playExplosionVideo() {
                 return new Promise((resolve) => {
                     const vid = document.getElementById('explosion-video');
-                    if (!vid) return resolve();
                     vid.currentTime = 0;
                     
                     vid.onerror = () => { resolve(); };
@@ -1578,6 +1673,9 @@
                     }
                 });
 
+                document.getElementById('btn-achievements').addEventListener('click', () => { this.showAchievementsModal(); });
+                document.getElementById('btn-close-achievements').addEventListener('click', () => { document.getElementById('achievements-modal').style.display = 'none'; });
+
                 document.getElementById('btn-settings').addEventListener('click', () => { this.showSettings(); });
                 document.getElementById('btn-close-settings').addEventListener('click', () => { document.getElementById('settings-modal').style.display = 'none'; });
                 document.getElementById('btn-help').addEventListener('click', () => { this.showHelpModal(); });
@@ -1639,6 +1737,7 @@
                     el.title = `${item.type.name} (${item.value})`; 
                     
                     el.onclick = async () => {
+                        this.unlockAchievement('META_CHARLATAN');
                         document.getElementById('debug-draw-modal').style.display = 'none';
                         p.victoryPoints = 0; // Penalty for picking token
                         
@@ -2178,6 +2277,15 @@
                 
                 if (sortedPlayers[0] === this.game.humanPlayer) {
                     titleEl.innerText = t('ui_you_win', "🏆 You win! 🏆");
+                    
+                    if (this.game.humanPlayer.victoryPoints > 70) {
+                        this.unlockAchievement('POINT_MAXXING');
+                    }
+                    
+                    const tiedPlayers = sortedPlayers.filter(p => p.victoryPoints === sortedPlayers[0].victoryPoints);
+                    if (tiedPlayers.length >= 3) {
+                        this.unlockAchievement('TIE_FIGHTER');
+                    }
                 } else {
                     titleEl.innerText = t('modal_game_over_title', "🏆 Game Over 🏆");
                 }
@@ -2246,6 +2354,8 @@
             startBuyingPhase() {
                 if (this.game.round === 9) { this.game.endRound(); return; }
                 this.shopCart = [];
+                this.game.humanPlayer.moneySpentThisRound = 0;
+                
                 this.game.players.forEach(p => {
                     if (!p.isHuman) { 
                         // AI Bard Power Logic
@@ -2343,6 +2453,15 @@
 
                     if (!disabled) el.addEventListener('click', () => { 
                         if (h.buyChip(item.type, item.value, item.cost)) { 
+                            h.moneySpentThisRound = (h.moneySpentThisRound || 0) + item.cost;
+                            
+                            if (item.type.id === 'ORANGE' && item.value === 6) {
+                                this.unlockAchievement('MEGA_PUMPKIN');
+                            }
+                            if (h.moneySpentThisRound > 56) {
+                                this.unlockAchievement('BIG_SPENDER');
+                            }
+
                             this.shopCart.push(item); 
                             this.renderShopUI(); 
                         } 
@@ -2590,15 +2709,15 @@
 
                 // Determine if we should draw the bubbling video or explosion video
                 if (player && player.exploded) {
-                    if (explosionVid.readyState >= 2) drawExplosion = true;
+                    if (explosionVid && explosionVid.readyState >= 2) drawExplosion = true;
                     if (player.explodedAt) {
                         const age = Date.now() - player.explodedAt;
                         // Safe bounds to prevent Safari globalAlpha DOMExceptions
                         elementAlpha = Math.max(0, Math.min(1.0, 1.0 - (age / 1000.0))); 
                         if (isNaN(elementAlpha)) elementAlpha = 1.0;
                     }
-                    if (!bubblingVid.paused) bubblingVid.pause();
-                } else if (player && player.currentWhiteValue > 3 && bubblingVid.readyState >= 2) {
+                    if (bubblingVid && !bubblingVid.paused) bubblingVid.pause();
+                } else if (player && player.currentWhiteValue > 3 && bubblingVid && bubblingVid.readyState >= 2) {
                     drawBubbling = true;
                     if (bubblingVid.paused) bubblingVid.play().catch(e => console.warn("Bubbling video play error:", e));
                 } else {
@@ -2875,6 +2994,11 @@
                 const human = this.game.humanPlayer;
                 if (!human) return;
 
+                // Check Kaboom Achievement
+                if (human.exploded && human.currentWhiteValue >= 18) {
+                    this.unlockAchievement('KABOOM');
+                }
+
                 // Hide the explosion video when we reset for a new round
                 const explVid = document.getElementById('explosion-video');
                 if (!human.exploded && !explVid.paused) {
@@ -2890,9 +3014,16 @@
                     humanFaceEl.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(human.character);
                 }
 
-                document.getElementById('ui-phase').innerText = `(${t('ui_phase_prefix', 'Phase:')} ${t('phase_' + this.game.phase.toLowerCase(), this.game.phase)})`;
-                document.getElementById('ui-round').innerText = this.game.round;
-                if (this.game.currentFortuneCard) document.getElementById('ui-fortune-text').innerText = `"${this.game.currentFortuneCard.text}"`;
+                const phaseEl = document.getElementById('ui-phase');
+                if (phaseEl) phaseEl.innerText = `(${t('ui_phase_prefix', 'Phase:')} ${t('phase_' + this.game.phase.toLowerCase(), this.game.phase)})`;
+                
+                const roundEl = document.getElementById('ui-round');
+                if (roundEl) roundEl.innerText = this.game.round;
+                
+                const fortuneEl = document.getElementById('ui-fortune-text');
+                if (fortuneEl && this.game.currentFortuneCard) {
+                    fortuneEl.innerText = `"${this.game.currentFortuneCard.text}"`;
+                }
 
                 const sellBtn = document.getElementById('btn-sell-potion');
                 if (sellBtn) {
@@ -3169,7 +3300,8 @@
             window.GAME_ASSETS = await assetManager.loadAll();
             
             // 2. Hide loading screen
-            document.getElementById('loading-overlay').style.display = 'none';
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
 
             // 3. Boot Game and Check Character Selection
             const savedBookSet = parseInt(getCookie('selectedBookSet')) || 1;
