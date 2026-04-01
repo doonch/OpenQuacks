@@ -766,7 +766,8 @@
                 'TIE_FIGHTER': { titleKey: 'ach_tie_fighter_title', defaultTitle: 'Tie Fighter', descKey: 'ach_tie_fighter_desc', defaultDesc: 'Win a 3-way tie breaker' },
                 'BIG_SPENDER': { titleKey: 'ach_big_spender_title', defaultTitle: 'Big Spender', descKey: 'ach_big_spender_desc', defaultDesc: 'Spend more than 56 coins in the shop' },
                 'META_CHARLATAN': { titleKey: 'ach_meta_charlatan_title', defaultTitle: 'Meta-charlatan', descKey: 'ach_meta_charlatan_desc', defaultDesc: 'Place a token using the debug draw dialog.' },
-                'STAY_HYDRATED': { titleKey: 'ach_stay_hydrated_title', defaultTitle: 'Stay Hydrated', descKey: 'ach_stay_hydrated_desc', defaultDesc: 'Achieve 16 or more droplet upgrades' }
+                'STAY_HYDRATED': { titleKey: 'ach_stay_hydrated_title', defaultTitle: 'Stay Hydrated', descKey: 'ach_stay_hydrated_desc', defaultDesc: 'Achieve 16 or more droplet upgrades' },
+                'RAT_VICHYSSOISE': { titleKey: 'ach_rat_vichyssoise_title', defaultTitle: 'Rat Vichyssoise', descKey: 'ach_rat_vichyssoise_desc', defaultDesc: 'Get 20 or more rat tails in a single round' }
             };
         }
 
@@ -1088,6 +1089,10 @@
                 this.players.forEach(p => {
                     p.ratTails = p.victoryPoints === maxVp ? 0 : VP_RAT_SPACES.filter(s => s > p.victoryPoints && s <= maxVp).length;
                     p.prepareForNewRound();
+                    
+                    if (p.isHuman && p.ratTails >= 20 && this.uiManager) {
+                        this.uiManager.unlockAchievement('RAT_VICHYSSOISE');
+                    }
                 });
 
                 if(this.uiManager) {
