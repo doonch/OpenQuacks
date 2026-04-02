@@ -2368,6 +2368,7 @@
                         if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
                             p.specialPowerActive = true;
+                            p.rubies += 3;
                         }
 
                         // AI Princess Power Logic
@@ -2485,12 +2486,13 @@
                         <div style="font-size: 2rem; display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; margin-bottom: 5px;">🪕</div>
                         <div style="font-size: 0.8em; font-weight: bold;">${t('shop_bard_title', "Bard's Charm")}</div>
                         <div style="font-size: 0.9em; color: #ff4444;">${t('cost', 'Cost:')} ${t('shop_free', 'Free')}</div>
-                        <div class="tooltip">${t('shop_bard_desc', 'Charm the shopkeeper! Get a 1-Ruby discount on all Ruby upgrades this round. (Once per game)')}</div>
+                        <div class="tooltip">${t('shop_bard_desc', 'Charm the shopkeeper! Gain 3 Rubies immediately, and get a 1-Ruby discount on all Ruby upgrades this round. (Once per game)')}</div>
                     `;
                     if (!h.specialPowerActive) {
                         bardEl.addEventListener('click', () => {
                             h.specialPowerUsed = true;
                             h.specialPowerActive = true;
+                            h.rubies += 3;
                             this.renderShopUI();
                         });
                     }
