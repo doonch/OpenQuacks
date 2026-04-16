@@ -410,8 +410,8 @@
             </div>
 
             <canvas id="cauldron-canvas" style="border-radius: 8px;"></canvas>
-            <video id="explosion-video" src="assets/explosion.mov" playsinline webkit-playsinline muted preload="auto" style="display: none;"></video>
-            <video id="bubbling-video" src="assets/cauldron_bubble1.mov" playsinline webkit-playsinline muted loop preload="auto" style="display: none;"></video>
+            <video id="explosion-video" src="assets/explosion.mov" playsinline webkit-playsinline muted preload="auto" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></video>
+            <video id="bubbling-video" src="assets/cauldron_bubble1.mov" playsinline webkit-playsinline muted autoplay loop preload="auto" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></video>
         </div>
     </div>
 
@@ -3766,6 +3766,22 @@
 
             // --- iOS/iPhone Video Audio Fix & Sound Init ---
             applySoundSettings();
+            
+            // iOS Video Wake-up Hack: Force decode engines to start on the very first user interaction
+            const wakeUpVideos = () => {
+                const bVid = document.getElementById('bubbling-video');
+                const eVid = document.getElementById('explosion-video');
+                if (bVid) {
+                    bVid.play().catch(()=>{}); 
+                }
+                if (eVid) {
+                    eVid.load(); 
+                }
+                window.removeEventListener('touchstart', wakeUpVideos, true);
+                window.removeEventListener('click', wakeUpVideos, true);
+            };
+            window.addEventListener('touchstart', wakeUpVideos, true);
+            window.addEventListener('click', wakeUpVideos, true);
 
             initGameData();
 
