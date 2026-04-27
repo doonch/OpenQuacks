@@ -1,0 +1,97 @@
+name: Deploy to GitHub Pages (annotated tag)
+
+# Deploys OpenQuacks to GitHub Pages.
+#
+# Runs only when an annotated tag matching v* is pushed AND that tag
+# points to a commit on main. Lightweight tags and tags off main are
+# rejected at the verify step. Uses the official actions/upload-pages-artifact
+# and actions/deploy-pages — no gh-pages branch.
+#
+# To cut a release:
+#   git tag -a v1.0.0 -m "Release 1.0.0"
+#   git push origin v1.0.0
+#
+# Repo Pages source must be set to "GitHub Actions"
+# (Settings -> Pages -> Source).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Annotated tag to deploy (must already exist and be on main)'
+        required: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for tag inspection)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Verify annotated tag and ancestry
+        id: verify
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+
+          TYPE=$(git for-each-ref "refs/tags/$TAG" --format '%(objecttype)' || true)
+          if [ "$TYPE" != "tag" ]; then
+            echo "::error::Tag '$TAG' is a lightweight tag (or does not exist). Production deploys require an annotated tag. Use: git tag -a $TAG -m 'message' && git push origin $TAG"
+            exit 1
+          fi
+
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$TAG" origin/main; then
+            echo "::error::Tag '$TAG' does not point to a commit reachable from origin/main."
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "::notice::Verified annotated tag '$TAG' on main."
+
+      - name: Stage site (exclude repo metadata)
+        run: |
+          set -euo pipefail
+          mkdir _site
+          rsync -a \
+            --exclude='/.git' \
+            --exclude='/.github' \
+            --exclude='/_site' \
+            ./ _site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Print URL
+        run: echo "::notice::Live at ${{ steps.deployment.outputs.page_url }}"
