@@ -1,0 +1,103 @@
+name: 'Publish to gh-pages'
+description: 'Copies the workspace to the gh-pages branch — either at root (preserving preview/) or under a given subdir.'
+
+inputs:
+  mode:
+    description: '"replace-root" wipes everything in gh-pages root except preview/. "replace-subdir" replaces only the named subdir, leaving everything else alone.'
+    required: true
+  subdir:
+    description: 'Path under gh-pages (only required when mode=replace-subdir), e.g. "preview/feature-x".'
+    required: false
+    default: ''
+  commit_message:
+    description: 'Commit message used on gh-pages.'
+    required: true
+  version_info:
+    description: 'Multi-line text written to version.txt of the deployed dir. The action appends a deployed_at timestamp.'
+    required: false
+    default: ''
+  github_token:
+    description: 'Token with contents:write to push the gh-pages branch.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Publish to gh-pages
+      shell: bash
+      env:
+        GH_TOKEN:       ${{ inputs.github_token }}
+        MODE:           ${{ inputs.mode }}
+        SUBDIR:         ${{ inputs.subdir }}
+        COMMIT_MESSAGE: ${{ inputs.commit_message }}
+        VERSION_INFO:   ${{ inputs.version_info }}
+      run: |
+        set -euo pipefail
+
+        # Validate inputs
+        case "$MODE" in
+          replace-root)
+            DEST="."
+            ;;
+          replace-subdir)
+            if [ -z "$SUBDIR" ]; then
+              echo "::error::subdir is required when mode=replace-subdir"
+              exit 1
+            fi
+            DEST="$SUBDIR"
+            ;;
+          *)
+            echo "::error::Invalid mode: $MODE (expected replace-root or replace-subdir)"
+            exit 1
+            ;;
+        esac
+
+        git config --global user.name  "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+        REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        TARGET=$(mktemp -d)
+        cd "$TARGET"
+
+        # Check out existing gh-pages, or initialize a fresh one.
+        if git ls-remote --exit-code "$REPO_URL" gh-pages >/dev/null 2>&1; then
+          git init -q
+          git remote add origin "$REPO_URL"
+          git fetch -q --depth=1 origin gh-pages
+          git checkout -q gh-pages
+        else
+          git init -q -b gh-pages
+          git remote add origin "$REPO_URL"
+        fi
+
+        # Mode-specific wipe.
+        if [ "$MODE" = "replace-root" ]; then
+          # Keep preview/ and .git, wipe everything else.
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'preview' -exec rm -rf {} +
+        else
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+        fi
+
+        # Copy workspace into destination, omitting repo internals.
+        rsync -a \
+          --exclude='/.git' \
+          --exclude='/.github' \
+          "${GITHUB_WORKSPACE}/" "$DEST/"
+
+        # Write version.txt (caller-supplied lines + timestamp).
+        {
+          if [ -n "$VERSION_INFO" ]; then
+            printf '%s\n' "$VERSION_INFO"
+          fi
+          echo "deployed_at: $(date -u +%FT%TZ)"
+        } > "$DEST/version.txt"
+
+        git add -A
+        if git diff --cached --quiet; then
+          echo "::notice::No changes to publish."
+          exit 0
+        fi
+        git commit -q -m "$COMMIT_MESSAGE"
+        git push -q origin gh-pages
+        echo "::notice::Pushed to gh-pages."

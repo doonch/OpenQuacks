@@ -1,0 +1,76 @@
+name: Deploy production (annotated tag)
+
+# Production deploys ONLY when an annotated tag matching v* is pushed
+# AND that tag points to a commit on main. Site goes to gh-pages root.
+# /preview/* directories are preserved by the publish action.
+#
+# To cut a release:
+#   git tag -a v1.0 -m "Release 1.0"
+#   git push origin v1.0
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Annotated tag to deploy (must already exist and be on main)'
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for tag inspection)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Verify annotated tag and ancestry
+        id: verify
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+
+          TYPE=$(git for-each-ref "refs/tags/$TAG" --format '%(objecttype)' || true)
+          if [ "$TYPE" != "tag" ]; then
+            echo "::error::Tag '$TAG' is a lightweight tag (or does not exist). Production deploys require an annotated tag. Use: git tag -a $TAG -m 'message' && git push origin $TAG"
+            exit 1
+          fi
+
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$TAG" origin/main; then
+            echo "::error::Tag '$TAG' does not point to a commit reachable from origin/main."
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "::notice::Verified annotated tag '$TAG' on main."
+
+      - name: Publish to gh-pages root
+        uses: ./.github/actions/publish-to-gh-pages
+        with:
+          mode: replace-root
+          commit_message: "Deploy production ${{ steps.verify.outputs.tag }}"
+          version_info: |
+            version: ${{ steps.verify.outputs.tag }}
+            commit:  ${{ github.sha }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print URL
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          echo "::notice::Live at https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/"
