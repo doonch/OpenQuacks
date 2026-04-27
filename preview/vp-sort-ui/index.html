@@ -1191,6 +1191,7 @@
                 });
 
                 if(this.uiManager) {
+                    this.uiManager.sortPlayers();
                     this.uiManager.updateFullUI();
                     if (this.round > 1 || this.uiManager.hasPlayedStartAnimation) {
                         this.uiManager.playQueuedSackAnimations();
@@ -1391,7 +1392,12 @@
                         p.convertedVP = Math.floor(p.money / 5) + Math.floor(p.rubies / 2);
                         p.victoryPoints += p.convertedVP; 
                     });
-                    if (this.uiManager) { this.uiManager.showGameOver(); document.getElementById('ui-phase').innerText = `(${t('phase_evaluation', 'Evaluation')})`; }
+                    if (this.uiManager) { 
+                        this.uiManager.sortPlayers(); 
+                        this.uiManager.updateFullUI();
+                        this.uiManager.showGameOver(); 
+                        document.getElementById('ui-phase').innerText = `(${t('phase_evaluation', 'Evaluation')})`; 
+                    }
                     return;
                 }
                 
@@ -1422,6 +1428,7 @@
                 this.hasPlayedStartAnimation = false;
                 this.isWitchBonusDie = false;
                 this.tutorialStep = 0; // State for interactive onboarding
+                this.displayPlayers = []; // Cached sorting order
                 
                 this.isDebug = window.location.href.includes('debug=1');
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
@@ -1439,6 +1446,10 @@
                 this.bindEvents(); 
                 this.handleResize();
                 this.startAnimationLoop(); // Continuous loop for fades
+            }
+
+            sortPlayers() {
+                this.displayPlayers = [...this.game.players].sort((a, b) => b.victoryPoints - a.victoryPoints);
             }
 
             unlockAchievement(id) {
@@ -3663,8 +3674,11 @@
 
                     playerListEl.innerHTML = ''; 
                     
-                    // Sort players by VP descending
-                    const sortedPlayers = [...this.game.players].sort((a, b) => b.victoryPoints - a.victoryPoints);
+                    // Use cached order instead of sorting dynamically, so cards don't jump around mid-round
+                    if (this.displayPlayers.length === 0 && this.game.players.length > 0) {
+                        this.sortPlayers();
+                    }
+                    const sortedPlayers = this.displayPlayers;
                     
                     sortedPlayers.forEach(player => {
                         const status = player.exploded ? t('status_exploded', "EXPLODED!") : (player.hasStopped ? t('status_finished', "Finished") : t('status_brewing', "Brewing..."));
