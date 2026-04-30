@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-quacks-v4';
+const CACHE_NAME = 'open-quacks-v13';
 
 // List of all files necessary to run the game offline
 const ASSETS_TO_CACHE = [
@@ -26,7 +26,9 @@ const ASSETS_TO_CACHE = [
     './lang/de.json',
     './lang/uk.json',
     './lang/el.json',
-    './lang/ga.json'
+    './lang/ga.json',
+    './lang/ja.json',
+    './lang/pt.json'
 ];
 
 // Install Event: Pre-cache all assets

@@ -2,15 +2,21 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="color-scheme" content="dark">
+    <meta name="format-detection" content="telephone=no">
     <title data-i18n="title">Open Quacks</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
-    
-    <!-- iOS Web App Support -->
+
+    <!-- PWA / Home Screen Support -->
     <link rel="apple-touch-icon" href="assets/icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="assets/icon-512.png">
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Open Quacks">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="OpenQuacks">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <style>
@@ -23,6 +29,10 @@
             --text-light: #f5f5f5;
             --accent: #e94560;
             --canvas-bg: #22223b;
+            --sat: env(safe-area-inset-top, 0px);
+            --sar: env(safe-area-inset-right, 0px);
+            --sab: env(safe-area-inset-bottom, 0px);
+            --sal: env(safe-area-inset-left, 0px);
         }
 
         * {
@@ -30,22 +40,58 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            /* Allow vertical scrolling, block pinch-zoom and double-tap-zoom
+               at the CSS level. touch-action does NOT inherit, so it must be
+               set on every element — body alone is not enough. canvas
+               overrides this to 'none' below for custom touch handling. */
+            touch-action: pan-y;
+        }
+
+        /* Block iOS long-press callout (Save Image, Copy) only on the
+           media-bearing elements where it actually matters. Applying this
+           to all elements via * can interfere with iOS Safari's synthesized
+           click events on plain divs and break the tutorial highlight taps. */
+        canvas, video, img {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Disallow text selection on body/UI text by default, but inputs
+           and editable areas remain selectable. Applied to body rather
+           than * so it doesn't interfere with iOS click delegation on
+           interactive elements. */
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        input, textarea, [contenteditable] {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        html, body {
+            overscroll-behavior: none;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-light);
             height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; 
+            overflow: hidden;
+            padding: var(--sat) var(--sar) var(--sab) var(--sal);
         }
 
         /* --- Loading Screen Overlay --- */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            height: 100dvh;
             background: var(--bg-color); z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
@@ -208,6 +254,12 @@
         }
 
         /* --- Tutorial Styles --- */
+        /* Note: tutorial-overlay deliberately uses 100vh (not 100dvh).
+           On iOS Safari, mixing 100dvh with position:fixed and an opacity
+           transition can shuffle layer compositing as the URL bar
+           collapses, causing the .tutorial-highlight (which should sit
+           above this overlay via z-index) to end up visually below it
+           after a moment. 100vh keeps the layer stable. */
         #tutorial-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.75); z-index: 2000;
@@ -257,8 +309,10 @@
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            height: 100dvh;
             background: rgba(0,0,0,0.8); display: none;
             justify-content: center; align-items: center; z-index: 1000;
+            padding: var(--sat) var(--sar) var(--sab) var(--sal);
         }
         .modal-content {
             background: var(--panel-bg); border: 2px solid var(--panel-border);
@@ -295,6 +349,13 @@
         .icon-small { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 5px; }
 
         /* --- Mobile / Narrow Screen Responsive Layout --- */
+        /* In mobile mode the body itself scrolls (matching upstream).
+           We tried locking body and scrolling #game-container instead
+           for a more "native" feel, but that broke the tutorial flow:
+           #tutorial-overlay (pointer-events: auto) catches scroll
+           gestures, and iOS Safari can't redirect them through to a
+           constrained scrollable child the way it natively scrolls
+           the body underneath a fixed overlay. Body-scroll wins. */
         @media (max-aspect-ratio: 2/3) {
             body {
                 height: auto;
@@ -401,7 +462,7 @@
                 <div id="ui-bag-count">0</div>
             </div>
 
-            <div id="achievement-toast" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center;">
+            <div id="achievement-toast" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; background: rgba(0,0,0,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; padding: var(--sat) var(--sar) var(--sab) var(--sal);">
                 <div class="toast-animate">
                     <div id="toast-icon" style="width: 80px; height: 80px; margin: 0 auto 10px auto; font-size: 4rem; display: flex; align-items: center; justify-content: center;">🏆</div>
                     <h2 id="toast-title" style="color: gold; font-size: 1.8rem; margin-bottom: 10px; font-weight: bold;">Achievement Unlocked!</h2>
@@ -474,8 +535,39 @@
                 <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_sound_desc">Enable or disable bubbling and explosion audio.</p>
             </div>
 
+            <div id="install-section" style="margin-top: 15px; text-align: start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; display: none;">
+                <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_install_title">📲 Install as App</strong>
+                <p style="margin: 5px 0 10px 0; font-size: 0.85em; color: #aaa;" data-i18n="settings_install_desc">Run full-screen, work offline, no browser bars.</p>
+                <button id="btn-install" style="background-color: #2a9d8f; width: 100%; display: none;" data-i18n="settings_install_btn">Install Now</button>
+                <button id="btn-install-ios" style="background-color: #2a9d8f; width: 100%; display: none;" data-i18n="settings_install_ios_btn">How to Install on iPhone</button>
+            </div>
+
             <button id="btn-close-settings" style="background-color: #4a4e69; margin-top: 25px; width: 100%;" data-i18n="btn_done">Done</button>
         </div>
+    </div>
+
+    <div id="ios-install-modal" class="modal-overlay" style="z-index: 1009;">
+        <div class="modal-content" style="max-width: 380px;">
+            <h2 data-i18n="ios_install_title">📲 Install on iPhone</h2>
+            <p style="margin: 10px 0 15px 0; font-size: 0.9em; color: #aaa;" data-i18n="ios_install_subtitle">A few quick steps to add OpenQuacks to your home screen:</p>
+            <ol style="text-align: start; line-height: 1.8; padding-inline-start: 24px; color: #ddd; font-size: 0.95em;">
+                <li data-i18n="ios_install_step1">Tap the <strong>Share</strong> button (the square with the upward arrow) at the bottom of Safari.</li>
+                <li data-i18n="ios_install_step2">Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+                <li data-i18n="ios_install_step3">Tap <strong>Add</strong> in the top-right corner.</li>
+            </ol>
+            <p style="margin-top: 18px; font-size: 0.85em; color: #aaa;" data-i18n="ios_install_note">Then open OpenQuacks from your home screen — full screen, offline-ready, no browser bars.</p>
+            <button id="btn-close-ios-install" style="background-color: #4a4e69; margin-top: 20px; width: 100%;" data-i18n="btn_got_it">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Bottom install nudge banner. Shown once after the tutorial completes
+         on first-visit, dismissible. Hidden on subsequent visits via cookie.
+         Only appears on platforms where we can guide an actual install (iOS
+         Safari with manual instructions, or Chromium with beforeinstallprompt). -->
+    <div id="install-nudge-banner" style="display: none; position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel-bg); border-top: 2px solid var(--panel-border); padding: 12px calc(var(--sar) + 12px) calc(var(--sab) + 12px) calc(var(--sal) + 12px); z-index: 1500; align-items: center; gap: 10px; box-shadow: 0 -4px 12px rgba(0,0,0,0.5);">
+        <span style="flex: 1; font-size: 0.9rem; color: var(--text-light);" data-i18n="install_nudge_text">📲 Install OpenQuacks for the best experience</span>
+        <button id="btn-install-nudge-yes" style="padding: 8px 14px; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9rem;" data-i18n="install_nudge_yes">Install</button>
+        <button id="btn-install-nudge-no" style="padding: 8px 10px; background: transparent; color: #aaa; border: 1px solid #4a4e69; border-radius: 6px; cursor: pointer; font-size: 0.85rem;" data-i18n="install_nudge_no">Later</button>
     </div>
 
     <div id="book-modal" class="modal-overlay" style="z-index: 1007;">
@@ -633,6 +725,17 @@
     </div>
 
     <script>
+        // Pinch-zoom blocking: handled at the CSS level by `touch-action: pan-y`
+        // on the universal selector, plus viewport meta `user-scalable=no,
+        // maximum-scale=1` for installed PWA standalone mode.
+        // Defense-in-depth for iOS Safari double-tap-zoom: prevent default on
+        // dblclick. dblclick fires only AFTER both taps complete, so this does
+        // NOT interfere with rapid single-tap interactions like tapping the
+        // SACK to draw chips quickly. (We deliberately do NOT preventDefault
+        // on touchend/gesturestart at the document level — those can break
+        // single-tap synthesized clicks on iOS.)
+        document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+
         // --- I18N Localization ---
         window.I18N = {};
         window.t = function(key, defaultStr) {
@@ -1802,6 +1905,12 @@
                         this.tutorialStep = 0;
                         setCookie('hasSeenHelp', 'true', 365);
                         this.updateTutorialUI();
+                        // First-visit player just finished the tutorial — show
+                        // the install nudge banner if their platform supports
+                        // a guided install and they haven't dismissed it before.
+                        if (typeof window.__maybeShowInstallNudge === 'function') {
+                            window.__maybeShowInstallNudge();
+                        }
                     }
                 }, true); // Capture phase intercepts the click before it activates anything else
 
@@ -3786,7 +3895,7 @@
             const LANG_FLAGS = { en: '🇺🇸', es: '🇪🇸', he: '🇮🇱', ar: '🇸🇦', fa: '🇮🇷', pl: '🇵🇱', de: '🇩🇪', uk: '🇺🇦', el: '🇬🇷', ga: '🇮🇪', ja: '🇯🇵', pt: '🇧🇷' };
             const urlParams = new URLSearchParams(window.location.search);
             
-            let lang = urlParams.get('lang');
+            let lang = urlParams.get('lang') || getCookie('selectedLanguage');
             if (!lang) {
                 // Detect browser language (e.g., 'es-ES' -> 'es'), fallback to 'en' if not supported
                 const browserLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0].toLowerCase();
@@ -3890,6 +3999,8 @@
                 btn.innerText = LANG_FLAGS[l];
                 btn.onclick = async () => {
                     document.documentElement.dir = ['he', 'ar', 'fa'].includes(l) ? 'rtl' : 'ltr';
+                    setCookie('selectedLanguage', l, 365); // Save preference for PWA reloads
+                    
                     try {
                         const response = await fetch(`lang/${l}.json`);
                         if (response.ok) {
@@ -3969,6 +4080,127 @@
                     });
             });
         }
+
+        // --- PWA Install UX ---
+        (function setupInstallUX() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                              || window.matchMedia('(display-mode: fullscreen)').matches
+                              || window.navigator.standalone === true;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+            const installSection = document.getElementById('install-section');
+            const installBtn = document.getElementById('btn-install');
+            const installIosBtn = document.getElementById('btn-install-ios');
+            const iosModal = document.getElementById('ios-install-modal');
+            const closeIosBtn = document.getElementById('btn-close-ios-install');
+
+            if (!installSection || !installBtn || !installIosBtn || !iosModal || !closeIosBtn) return;
+
+            let deferredPrompt = null;
+
+            // If we're already running as an installed PWA, hide everything.
+            if (isStandalone) {
+                installSection.style.display = 'none';
+                return;
+            }
+
+            // iOS Safari: no beforeinstallprompt event — show manual instructions button.
+            if (isIOS) {
+                installSection.style.display = 'block';
+                installIosBtn.style.display = 'block';
+            }
+
+            // Android / Chromium: capture the prompt for later use.
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installSection.style.display = 'block';
+                installBtn.style.display = 'block';
+            });
+
+            // Hide install UI once the app is installed.
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+                installIosBtn.style.display = 'none';
+                installSection.style.display = 'none';
+            });
+
+            installBtn.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                try {
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                } catch (e) {
+                    console.log('Install prompt failed:', e);
+                }
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            });
+
+            installIosBtn.addEventListener('click', () => {
+                iosModal.style.display = 'flex';
+            });
+            closeIosBtn.addEventListener('click', () => {
+                iosModal.style.display = 'none';
+            });
+            iosModal.addEventListener('click', (e) => {
+                if (e.target === iosModal) iosModal.style.display = 'none';
+            });
+
+            // --- First-visit install nudge banner ---
+            // Shown once after the tutorial completes if the platform supports
+            // a guided install (iOS Safari OR Chromium with beforeinstallprompt
+            // captured). Dismissed via the "Later" button = cookie set, never
+            // auto-shown again. The Settings -> Install section remains
+            // available for users who change their mind.
+            const banner = document.getElementById('install-nudge-banner');
+            const bannerYes = document.getElementById('btn-install-nudge-yes');
+            const bannerNo = document.getElementById('btn-install-nudge-no');
+
+            function maybeShowInstallNudge() {
+                if (!banner) return;
+                if (isStandalone) return;
+                if (typeof getCookie === 'function' && getCookie('quacks_install_nudge_seen') === '1') return;
+                // Only show if we have a way to actually guide the user to install.
+                const canGuideInstall = isIOS || !!deferredPrompt;
+                if (!canGuideInstall) return;
+                banner.style.display = 'flex';
+            }
+
+            function dismissInstallNudge() {
+                if (typeof setCookie === 'function') setCookie('quacks_install_nudge_seen', '1', 365);
+                if (banner) banner.style.display = 'none';
+            }
+
+            // Expose so the tutorial-dismissal hook can trigger us same-session.
+            window.__maybeShowInstallNudge = maybeShowInstallNudge;
+
+            if (bannerYes) {
+                bannerYes.addEventListener('click', async () => {
+                    if (isIOS) {
+                        iosModal.style.display = 'flex';
+                    } else if (deferredPrompt) {
+                        try {
+                            deferredPrompt.prompt();
+                            await deferredPrompt.userChoice;
+                        } catch (e) {
+                            console.log('Install prompt failed:', e);
+                        }
+                        deferredPrompt = null;
+                    }
+                    dismissInstallNudge();
+                });
+            }
+            if (bannerNo) {
+                bannerNo.addEventListener('click', dismissInstallNudge);
+            }
+
+            // Returning visitor: tutorial was completed in a previous session.
+            if (typeof getCookie === 'function' && getCookie('hasSeenHelp') === 'true') {
+                maybeShowInstallNudge();
+            }
+        })();
     </script>
 </body>
 </html>
