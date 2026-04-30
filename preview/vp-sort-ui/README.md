@@ -5,7 +5,7 @@ Prompts by Gemini 3; Art by Nano Banana 2, animation by Veo 3. Code by Gemini Ca
 
 Play at: https://doonch.github.io/OpenQuacks
 
-From iPhone/iPad, best to save as Web App (Share -> Add to home screen -> check "Web App")
+On iPhone/iPad, the in-app Settings → "How to Install on iPhone" walks you through Add to Home Screen. Once installed, the game runs full-screen with offline support.
 
 File any issues or contribute to the code here.
 
