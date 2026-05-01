@@ -907,7 +907,19 @@
                 YELLOW: { description: t('book3_yellow', "No effect yet.") },
                 BLUE: { description: t('book3_blue', "No effect yet.") },
                 GREEN: { description: t('book3_green', "No effect yet.") },
-                PURPLE: { description: t('book3_purple', "No effect yet.") },
+                PURPLE: { 
+                    description: t('book3_purple', "End of Round: If you drew more Moths than 1 player, gain 1 Droplet step. If more than 2 players, gain 1 Droplet step & 1 Ruby."),
+                    endOfRound: (p) => { 
+                        const myCount = p.cauldron.filter(c => c.type.id === 'PURPLE').length;
+                        if (myCount === 0) return;
+                        let beaten = 0;
+                        p.game.players.forEach(other => {
+                            if (other !== p && myCount > other.cauldron.filter(c => c.type.id === 'PURPLE').length) beaten++;
+                        });
+                        if (beaten >= 2) { p.dropletPosition++; p.rubies++; }
+                        else if (beaten === 1) { p.dropletPosition++; }
+                    } 
+                },
                 BLACK: { description: t('book3_black', "No effect yet.") }
             };
 
