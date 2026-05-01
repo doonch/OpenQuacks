@@ -517,6 +517,7 @@
             <select id="settings-book-select" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #4a4e69; border-radius: 6px; font-size: 1rem;">
                 <option value="1" data-i18n="settings_set1">Set 1 (Beginner Friendly)</option>
                 <option value="2" data-i18n="settings_set2">Set 2 (Advanced Strategies)</option>
+                <option value="3" data-i18n="settings_set3">Set 3 (Living on the edge)</option>
             </select>
 
             <div style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
@@ -743,7 +744,7 @@
         };
 
         // Global mutable variables for localized text
-        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
+        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, INGREDIENT_BOOKS_SET_3, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
 
         function initGameData() {
             INGREDIENTS = {
@@ -889,6 +890,25 @@
                     description: t('book2_black', "End of Round: If you placed at least 1 Crow Skull, gain 1 Droplet step."),
                     endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) p.dropletPosition += 1; } 
                 }
+            };
+
+            INGREDIENT_BOOKS_SET_3 = {
+                ORANGE: { 
+                    description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect."),
+                    immediate: (p, c) => {
+                        if (p.game.config.orangeExtraSpace) {
+                            p.currentBrewValue += 1;
+                            c.spaceIndex += 1;
+                        }
+                    }
+                },
+                WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                RED: { description: t('book3_red', "No effect yet.") },
+                YELLOW: { description: t('book3_yellow', "No effect yet.") },
+                BLUE: { description: t('book3_blue', "No effect yet.") },
+                GREEN: { description: t('book3_green', "No effect yet.") },
+                PURPLE: { description: t('book3_purple', "No effect yet.") },
+                BLACK: { description: t('book3_black', "No effect yet.") }
             };
 
             SHOP_CATALOG = [
@@ -1216,7 +1236,7 @@
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, useCharacterPowers: false, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; 
-                this.books = this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                this.books = this.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
             }
 
             setupPlayers(humanCharName) {
@@ -2579,7 +2599,7 @@
                     const val = parseInt(e.target.value);
                     setCookie('selectedBookSet', val, 365);
                     this.game.config.bookSet = val;
-                    this.game.books = val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    this.game.books = val === 3 ? INGREDIENT_BOOKS_SET_3 : (val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
                     this.updateFullUI();
                 };
                 
@@ -4026,7 +4046,7 @@
                     });
                     
                     initGameData();
-                    gameController.books = gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    gameController.books = gameController.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
                     
                     // Update active fortune card reference for the UI string update
                     if (gameController.currentFortuneCard) {
