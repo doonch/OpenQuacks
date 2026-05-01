@@ -906,7 +906,21 @@
                 RED: { description: t('book3_red', "No effect yet.") },
                 YELLOW: { description: t('book3_yellow', "No effect yet.") },
                 BLUE: { description: t('book3_blue', "No effect yet.") },
-                GREEN: { description: t('book3_green', "No effect yet.") },
+                GREEN: { 
+                    description: t('book3_green', "End of Round: If your Boomberries total exactly 7, sum your Spiders and move your brew value that many spaces for this evaluation."),
+                    endOfRound: (p) => { 
+                        if (p.currentWhiteValue === 7) {
+                            const sum = p.cauldron.filter(c => c.type.id === 'GREEN').reduce((acc, c) => acc + c.value, 0);
+                            if (sum > 0) {
+                                p.currentBrewValue += sum;
+                                const newTrack = TRACK_REWARDS[Math.min(p.currentBrewValue, TRACK_REWARDS.length - 1)];
+                                p.roundVP = newTrack.vp; 
+                                p.roundMoney = newTrack.money; 
+                                p.roundRuby = newTrack.ruby;
+                            }
+                        }
+                    } 
+                },
                 PURPLE: { 
                     description: t('book3_purple', "End of Round: If you drew more Moths than 1 player, gain 1 Droplet step. If more than 2 players, gain 1 Droplet step & 1 Ruby."),
                     endOfRound: (p) => { 
@@ -920,7 +934,13 @@
                         else if (beaten === 1) { p.dropletPosition++; }
                     } 
                 },
-                BLACK: { description: t('book3_black', "No effect yet.") }
+                BLACK: { 
+                    description: t('book3_black', "If this token is placed on a ruby space, immediately take a Ruby."),
+                    immediate: (p, c) => { 
+                        const spaceInfo = TRACK_REWARDS[Math.min(c.spaceIndex, TRACK_REWARDS.length - 1)];
+                        if (spaceInfo && spaceInfo.ruby) p.rubies++;
+                    } 
+                }
             };
 
             SHOP_CATALOG = [
@@ -3562,6 +3582,18 @@
                     } else if (mothCount >= 3) {
                         projectedVP += 2;
                         projectedRuby += 1;
+                    }
+                } else if (bookSet === 3) {
+                    // Project Green (Spider) track-jumping bonus!
+                    if (player.currentWhiteValue === 7) {
+                        const greenSum = player.cauldron.filter(c => c.type.id === 'GREEN').reduce((acc, c) => acc + c.value, 0);
+                        if (greenSum > 0) {
+                            const projBrew = (player.currentBrewValue || 0) + greenSum;
+                            const newTrack = TRACK_REWARDS[Math.min(projBrew, TRACK_REWARDS.length - 1)];
+                            projectedVP = newTrack.vp;
+                            projectedMoney = newTrack.money;
+                            projectedRuby = newTrack.ruby ? 1 : 0;
+                        }
                     }
                 }
 
