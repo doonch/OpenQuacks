@@ -3813,18 +3813,21 @@
                         const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
                         const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(player.character);
                         
-                        let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} <span dir="ltr" style="display: inline-flex; align-items: center;">`;
+                        const isRTL = document.documentElement.dir === 'rtl';
+                        let brewHtml = `<div style="margin: 4px 0;">
+                            <div style="font-size: 0.85em; color: #ccc;">${t('ui_brew_value', 'Brew Value:')}</div>
+                            <div dir="ltr" style="display: flex; align-items: center; flex-wrap: wrap; margin-top: 2px; justify-content: ${isRTL ? 'flex-end' : 'flex-start'};">`;
                         if (pRewards.vp > 0) {
-                            brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
+                            brewHtml += `<span style="color: #f5f5f5;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
                         }
-                        brewHtml += `<strong style="color: gold; margin-left: 5px;">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
+                        brewHtml += `<strong style="color: gold; margin-left: ${pRewards.vp > 0 ? '4px' : '0px'};">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
                         if (pRewards.rubies > 0) {
                             if (pRewards.rubies > 1) {
-                                brewHtml += `<span style="color: #ff4444; margin-left: 8px;">${pRewards.rubies}</span>`;
+                                brewHtml += `<span style="color: #ff4444; margin-left: 4px;">${pRewards.rubies}</span>`;
                             }
                             brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
                         }
-                        brewHtml += `</span></div>`;
+                        brewHtml += `</div></div>`;
 
                         const hasSprite = window.GAME_ASSETS && window.GAME_ASSETS.UTILS && window.GAME_ASSETS.UTILS.naturalWidth > 0;
                         const vpIconHtml = hasSprite 
@@ -3834,12 +3837,12 @@
                         card.innerHTML = `
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; ${pFaceStyle}">${emojiStr}</div>
-                                <div style="flex: 1;">
-                                    <strong>${player.name}</strong>
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.name}</strong>
                                     <div style="font-size: 0.9em; margin-top: 5px;">
                                         <div>${t('ruby_plural', 'Rubies')}: ${player.rubies}</div>
                                         ${brewHtml}
-                                        <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}">${status}</div>
+                                        <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${status}</div>
                                     </div>
                                 </div>
                                 ${vpIconHtml}
