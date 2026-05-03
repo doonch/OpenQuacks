@@ -1455,7 +1455,7 @@
                     if (probExplode >= thresholdT) { 
                         if (this.config.useCharacterPowers && p.character === 'MONK' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
-                            p.explosionLimitOffset = 3;
+                            p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 3;
                             continue; // Skip the stop, re-evaluate with the new threshold next tick
                         }
                         p.hasStopped = true; 
@@ -2062,7 +2062,7 @@
                     const h = this.game.humanPlayer;
                     if (this.game.config.useCharacterPowers && h.character === 'MONK' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
                         h.specialPowerUsed = true;
-                        h.explosionLimitOffset = 3;
+                        h.explosionLimitOffset = (h.explosionLimitOffset || 0) + 3;
                         this.updateFullUI();
                     }
                 });
