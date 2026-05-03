@@ -904,7 +904,15 @@
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
                 RED: { description: t('book3_red', "No effect yet.") },
-                YELLOW: { description: t('book3_yellow', "No effect yet.") },
+                YELLOW: { 
+                    description: t('book3_yellow', "First Mandrake played: explosion limit +1. Third Mandrake played: explosion limit +1 again."),
+                    immediate: (p, c) => { 
+                        const count = p.cauldron.filter(ch => ch.type.id === 'YELLOW').length;
+                        if (count === 1 || count === 3) {
+                            p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 1;
+                        }
+                    } 
+                },
                 BLUE: { description: t('book3_blue', "No effect yet.") },
                 GREEN: { 
                     description: t('book3_green', "End of Round: If your Boomberries total exactly 7, sum your Spiders and move your brew value that many spaces for this evaluation."),
