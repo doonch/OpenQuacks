@@ -1,4 +1,4 @@
 preview_for: rule-set-3
-commit:      57ec117dfc65d3c4bebedf23f5604b84a745a54e
+commit:      684ff3b9ff3ddc32cabac7ed5491f7608241297a
 
-deployed_at: 2026-05-04T16:52:48Z
+deployed_at: 2026-05-04T23:50:02Z
