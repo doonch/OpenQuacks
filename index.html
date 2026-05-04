@@ -915,7 +915,7 @@
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
                 RED: { 
-                    description: t('book3_red', "If you placed a Boomberry immediately before a Toadstool, add the Boomberry's value to the Toadstool's movement."),
+                    description: t('book3_red', "Add the value of the immediately preceding Boomberry to this Toadstool's movement."),
                     immediate: (p, c) => { 
                         if (p.cauldron.length >= 2 && p.cauldron[p.cauldron.length - 2].type.id === 'WHITE') {
                             const bonus = p.cauldron[p.cauldron.length - 2].value;
@@ -925,7 +925,7 @@
                     } 
                 },
                 YELLOW: { 
-                    description: t('book3_yellow', "First Mandrake played: explosion limit +1. Third Mandrake played: explosion limit +1 again."),
+                    description: t('book3_yellow', "1st and 3rd Mandrakes played each increase your explosion limit by +1."),
                     immediate: (p, c) => { 
                         const count = p.cauldron.filter(ch => ch.type.id === 'YELLOW').length;
                         if (count === 1 || count === 3) {
@@ -934,7 +934,7 @@
                     } 
                 },
                 BLUE: { 
-                    description: t('book3_blue', "End of Round: Choose a token in your cauldron to upgrade. 1 Ghost = upgrade 1->2. 2 Ghosts = upgrade 2->4. 3+ Ghosts = upgrade 1->4."),
+                    description: t('book3_blue', "End of Round: Upgrade 1 token. 1 Ghost = 1->2. 2 Ghosts = 2->4. 3+ Ghosts = 1->4."),
                     endOfRound: async (p) => { 
                         if (p.game.round === 9) return; // Skip upgrading tokens on the final round
                         
@@ -982,7 +982,7 @@
                     } 
                 },
                 GREEN: { 
-                    description: t('book3_green', "End of Round: If your Boomberries total exactly 7, sum your Spiders and move your brew value that many spaces for this evaluation."),
+                    description: t('book3_green', "End of Round: If Boomberries total exactly 7, add your Spiders' total value to your brew spaces."),
                     endOfRound: (p) => { 
                         if (p.currentWhiteValue === 7) {
                             const sum = p.cauldron.filter(c => c.type.id === 'GREEN').reduce((acc, c) => acc + c.value, 0);
@@ -997,7 +997,7 @@
                     } 
                 },
                 PURPLE: { 
-                    description: t('book3_purple', "End of Round: If you drew more Moths than 1 player, gain 1 Droplet step. If more than 2 players, gain 1 Droplet step & 1 Ruby."),
+                    description: t('book3_purple', "End of Round: Gain 1 Droplet if you have more Moths than 1 player, or +1 Droplet & +1 Ruby if more than 2 players."),
                     endOfRound: (p) => { 
                         const myCount = p.cauldron.filter(c => c.type.id === 'PURPLE').length;
                         if (myCount === 0) return;
@@ -1010,7 +1010,7 @@
                     } 
                 },
                 BLACK: { 
-                    description: t('book3_black', "If this token is placed on a ruby space, immediately take a Ruby."),
+                    description: t('book3_black', "Immediately gain 1 Ruby if placed on a Ruby space."),
                     immediate: (p, c) => { 
                         const spaceInfo = TRACK_REWARDS[Math.min(c.spaceIndex, TRACK_REWARDS.length - 1)];
                         if (spaceInfo && spaceInfo.ruby) p.rubies++;
