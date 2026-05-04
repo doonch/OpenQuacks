@@ -903,7 +903,16 @@
                     }
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
-                RED: { description: t('book3_red', "No effect yet.") },
+                RED: { 
+                    description: t('book3_red', "If you placed a Boomberry immediately before a Toadstool, add the Boomberry's value to the Toadstool's movement."),
+                    immediate: (p, c) => { 
+                        if (p.cauldron.length >= 2 && p.cauldron[p.cauldron.length - 2].type.id === 'WHITE') {
+                            const bonus = p.cauldron[p.cauldron.length - 2].value;
+                            p.currentBrewValue += bonus; 
+                            c.spaceIndex += bonus; 
+                        }
+                    } 
+                },
                 YELLOW: { 
                     description: t('book3_yellow', "First Mandrake played: explosion limit +1. Third Mandrake played: explosion limit +1 again."),
                     immediate: (p, c) => { 
