@@ -936,6 +936,8 @@
                 BLUE: { 
                     description: t('book3_blue', "End of Round: Choose a token in your cauldron to upgrade. 1 Ghost = upgrade 1->2. 2 Ghosts = upgrade 2->4. 3+ Ghosts = upgrade 1->4."),
                     endOfRound: async (p) => { 
+                        if (p.game.round === 9) return; // Skip upgrading tokens on the final round
+                        
                         const blues = p.cauldron.filter(ch => ch.type.id === 'BLUE').length;
                         if (blues === 0) return;
                         
