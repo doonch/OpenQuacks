@@ -517,6 +517,7 @@
             <select id="settings-book-select" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.5); color: white; border: 1px solid #4a4e69; border-radius: 6px; font-size: 1rem;">
                 <option value="1" data-i18n="settings_set1">Set 1 (Beginner Friendly)</option>
                 <option value="2" data-i18n="settings_set2">Set 2 (Advanced Strategies)</option>
+                <option value="3" data-i18n="settings_set3">Set 3 (Living on the edge)</option>
             </select>
 
             <div style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
@@ -676,6 +677,17 @@
         </div>
     </div>
 
+    <div id="ghost-upgrade-modal" class="modal-overlay" style="z-index: 1008;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2 data-i18n="modal_ghost_upgrade_title">👻 Ghostly Exchange</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;" data-i18n="modal_ghost_upgrade_desc">Select one token from your cauldron to upgrade!</p>
+            <div id="ghost-upgrade-items" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 20px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <!-- Tokens injected here via JS -->
+            </div>
+            <button id="btn-skip-ghost-upgrade" style="background-color: #4a4e69;" data-i18n="btn_skip">Skip</button>
+        </div>
+    </div>
+
     <div id="sugar-rush-modal" class="modal-overlay" style="z-index: 1008;">
         <div class="modal-content" style="max-width: 500px;">
             <h2 data-i18n="modal_sugar_rush_title">🍭 Sugar Rush!</h2>
@@ -743,7 +755,7 @@
         };
 
         // Global mutable variables for localized text
-        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
+        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, INGREDIENT_BOOKS_SET_3, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
 
         function initGameData() {
             INGREDIENTS = {
@@ -888,6 +900,121 @@
                 BLACK: { 
                     description: t('book2_black', "End of Round: If you placed at least 1 Crow Skull, gain 1 Droplet step."),
                     endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) p.dropletPosition += 1; } 
+                }
+            };
+
+            INGREDIENT_BOOKS_SET_3 = {
+                ORANGE: { 
+                    description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect."),
+                    immediate: (p, c) => {
+                        if (p.game.config.orangeExtraSpace) {
+                            p.currentBrewValue += 1;
+                            c.spaceIndex += 1;
+                        }
+                    }
+                },
+                WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                RED: { 
+                    description: t('book3_red', "Add the value of the immediately preceding Boomberry to this Toadstool's movement."),
+                    immediate: (p, c) => { 
+                        if (p.cauldron.length >= 2 && p.cauldron[p.cauldron.length - 2].type.id === 'WHITE') {
+                            const bonus = p.cauldron[p.cauldron.length - 2].value;
+                            p.currentBrewValue += bonus; 
+                            c.spaceIndex += bonus; 
+                        }
+                    } 
+                },
+                YELLOW: { 
+                    description: t('book3_yellow', "1st and 3rd Mandrakes played each increase your explosion limit by +1."),
+                    immediate: (p, c) => { 
+                        const count = p.cauldron.filter(ch => ch.type.id === 'YELLOW').length;
+                        if (count === 1 || count === 3) {
+                            p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 1;
+                        }
+                    } 
+                },
+                BLUE: { 
+                    description: t('book3_blue', "End of Round: Upgrade 1 token. 1 Ghost = 1->2. 2 Ghosts = 2->4. 3+ Ghosts = 1->4."),
+                    endOfRound: async (p) => { 
+                        if (p.game.round === 9) return; // Skip upgrading tokens on the final round
+                        
+                        const blues = p.cauldron.filter(ch => ch.type.id === 'BLUE').length;
+                        if (blues === 0) return;
+                        
+                        const getBestUpgrade = (chip) => {
+                            const vals = INGREDIENTS[chip.type.id].values;
+                            let best = null;
+                            if (chip.value === 1) {
+                                if (blues >= 3 && vals.includes(4)) best = 4;
+                                else if (vals.includes(2)) best = 2; 
+                            } else if (chip.value === 2) {
+                                if (blues >= 2 && vals.includes(4)) best = 4;
+                            }
+                            return best;
+                        };
+
+                        const upgradeableChips = [];
+                        const seen = new Set();
+                        p.cauldron.forEach(c => {
+                            const toVal = getBestUpgrade(c);
+                            if (toVal !== null) {
+                                const key = `${c.type.id}_${c.value}`;
+                                if (!seen.has(key)) {
+                                    seen.add(key);
+                                    upgradeableChips.push({ chip: c, toVal });
+                                }
+                            }
+                        });
+
+                        if (upgradeableChips.length === 0) return;
+
+                        if (p.isHuman && p.game.uiManager) {
+                            await p.game.uiManager.showGhostUpgradeModal(upgradeableChips);
+                        } else {
+                            // AI behavior: Automatically upgrade the chip that gives the biggest mathematical jump
+                            upgradeableChips.sort((a, b) => (b.toVal - b.chip.value) - (a.toVal - a.chip.value));
+                            const target = upgradeableChips[0];
+                            const invIndex = p.inventory.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
+                            if (invIndex !== -1) p.inventory[invIndex].value = target.toVal;
+                            const bagIndex = p.bag.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
+                            if (bagIndex !== -1) p.bag[bagIndex].value = target.toVal;
+                        }
+                    } 
+                },
+                GREEN: { 
+                    description: t('book3_green', "End of Round: If Boomberries total exactly 7, add your Spiders' total value to your brew spaces."),
+                    endOfRound: (p) => { 
+                        if (p.currentWhiteValue === 7) {
+                            const sum = p.cauldron.filter(c => c.type.id === 'GREEN').reduce((acc, c) => acc + c.value, 0);
+                            if (sum > 0) {
+                                p.currentBrewValue += sum;
+                                const newTrack = TRACK_REWARDS[Math.min(p.currentBrewValue, TRACK_REWARDS.length - 1)];
+                                p.roundVP = newTrack.vp; 
+                                p.roundMoney = newTrack.money; 
+                                p.roundRuby = newTrack.ruby;
+                            }
+                        }
+                    } 
+                },
+                PURPLE: { 
+                    description: t('book3_purple', "End of Round: Gain 1 Droplet if you have more Moths than 1 player, or +1 Droplet & +1 Ruby if more than 2 players."),
+                    endOfRound: (p) => { 
+                        const myCount = p.cauldron.filter(c => c.type.id === 'PURPLE').length;
+                        if (myCount === 0) return;
+                        let beaten = 0;
+                        p.game.players.forEach(other => {
+                            if (other !== p && myCount > other.cauldron.filter(c => c.type.id === 'PURPLE').length) beaten++;
+                        });
+                        if (beaten >= 2) { p.dropletPosition++; p.rubies++; }
+                        else if (beaten === 1) { p.dropletPosition++; }
+                    } 
+                },
+                BLACK: { 
+                    description: t('book3_black', "Immediately gain 1 Ruby if placed on a Ruby space."),
+                    immediate: (p, c) => { 
+                        const spaceInfo = TRACK_REWARDS[Math.min(c.spaceIndex, TRACK_REWARDS.length - 1)];
+                        if (spaceInfo && spaceInfo.ruby) p.rubies++;
+                    } 
                 }
             };
 
@@ -1216,7 +1343,7 @@
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, useCharacterPowers: false, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; 
-                this.books = this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                this.books = this.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
             }
 
             setupPlayers(humanCharName) {
@@ -1395,7 +1522,7 @@
                     if (probExplode >= thresholdT) { 
                         if (this.config.useCharacterPowers && p.character === 'MONK' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
-                            p.explosionLimitOffset = 3;
+                            p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 3;
                             continue; // Skip the stop, re-evaluate with the new threshold next tick
                         }
                         p.hasStopped = true; 
@@ -1450,7 +1577,7 @@
                 }
             }
 
-            continueEvaluationPhase() {
+            async continueEvaluationPhase() {
                 this.players.forEach(p => {
                     const trackSpace = TRACK_REWARDS[Math.min(p.currentBrewValue || 0, TRACK_REWARDS.length - 1)];
                     p.roundVP = trackSpace.vp; p.roundMoney = trackSpace.money; p.roundRuby = trackSpace.ruby;
@@ -1458,10 +1585,12 @@
 
                 if (this.currentFortuneCard && this.currentFortuneCard.type === 'conditional') this.currentFortuneCard.evaluate(this);
 
-                this.players.forEach(p => {
-                    Object.keys(this.books).forEach(color => { 
-                        if (this.books[color] && this.books[color].endOfRound) this.books[color].endOfRound(p); 
-                    });
+                for (const p of this.players) {
+                    for (const color of Object.keys(this.books)) {
+                        if (this.books[color] && this.books[color].endOfRound) {
+                            await this.books[color].endOfRound(p); 
+                        }
+                    }
                     if (p.roundRuby) p.rubies += 1;
                     if (!p.isHuman) {
                         if (p.exploded) { 
@@ -1477,7 +1606,7 @@
                         }
                         else { p.victoryPoints += p.roundVP; p.money += p.roundMoney; }
                     }
-                });
+                }
 
                 if (this.humanPlayer.exploded) {
                     if(this.uiManager) this.uiManager.showExplosionModal(this.humanPlayer.roundVP, this.humanPlayer.roundMoney);
@@ -2002,7 +2131,7 @@
                     const h = this.game.humanPlayer;
                     if (this.game.config.useCharacterPowers && h.character === 'MONK' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
                         h.specialPowerUsed = true;
-                        h.explosionLimitOffset = 3;
+                        h.explosionLimitOffset = (h.explosionLimitOffset || 0) + 3;
                         this.updateFullUI();
                     }
                 });
@@ -2301,6 +2430,57 @@
                 if (modal) modal.style.display = 'flex';
             }
 
+            showGhostUpgradeModal(upgradeableItems) {
+                return new Promise((resolve) => {
+                    const h = this.game.humanPlayer;
+                    const container = document.getElementById('ghost-upgrade-items');
+                    if (!container) { resolve(false); return; }
+                    container.innerHTML = '';
+
+                    upgradeableItems.forEach(({ chip, toVal }) => {
+                        const elWrapper = document.createElement('div');
+                        elWrapper.style.cssText = "display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border-radius: 8px; transition: background 0.2s; border: 2px solid transparent;";
+                        
+                        elWrapper.addEventListener('mouseenter', () => { elWrapper.style.backgroundColor = 'rgba(255,255,255,0.1)'; elWrapper.style.borderColor = 'gold'; });
+                        elWrapper.addEventListener('mouseleave', () => { elWrapper.style.backgroundColor = 'transparent'; elWrapper.style.borderColor = 'transparent'; });
+                        
+                        const originalStyle = getChipSpriteStyle(chip.type.id, chip.value);
+                        const upgradeStyle = getChipSpriteStyle(chip.type.id, toVal);
+                        
+                        elWrapper.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="chip-icon" style="width: 50px; height: 50px; ${originalStyle || `background-color: ${chip.type.color};`}">${!originalStyle ? chip.value : ''}</div>
+                                <span style="color: gold; font-weight: bold; font-size: 1.5rem;">➔</span>
+                                <div class="chip-icon" style="width: 50px; height: 50px; ${upgradeStyle || `background-color: ${chip.type.color};`}">${!upgradeStyle ? toVal : ''}</div>
+                            </div>
+                        `;
+
+                        elWrapper.onclick = () => {
+                            // Apply the upgrade to the player's permanent bag
+                            const invIndex = h.inventory.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
+                            if (invIndex !== -1) h.inventory[invIndex].value = toVal;
+                            
+                            const bagIndex = h.bag.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
+                            if (bagIndex !== -1) h.bag[bagIndex].value = toVal;
+                            
+                            document.getElementById('ghost-upgrade-modal').style.display = 'none';
+                            resolve(true); 
+                        };
+                        container.appendChild(elWrapper);
+                    });
+
+                    const skipBtn = document.getElementById('btn-skip-ghost-upgrade');
+                    if (skipBtn) {
+                        skipBtn.onclick = () => {
+                            document.getElementById('ghost-upgrade-modal').style.display = 'none';
+                            resolve(false); // User chose not to upgrade anything
+                        };
+                    }
+
+                    document.getElementById('ghost-upgrade-modal').style.display = 'flex';
+                });
+            }
+
             showSugarRushModal() {
                 const h = this.game.humanPlayer;
                 const container = document.getElementById('sugar-rush-items');
@@ -2579,7 +2759,7 @@
                     const val = parseInt(e.target.value);
                     setCookie('selectedBookSet', val, 365);
                     this.game.config.bookSet = val;
-                    this.game.books = val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    this.game.books = val === 3 ? INGREDIENT_BOOKS_SET_3 : (val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
                     this.updateFullUI();
                 };
                 
@@ -3531,6 +3711,18 @@
                         projectedVP += 2;
                         projectedRuby += 1;
                     }
+                } else if (bookSet === 3) {
+                    // Project Green (Spider) track-jumping bonus!
+                    if (player.currentWhiteValue === 7) {
+                        const greenSum = player.cauldron.filter(c => c.type.id === 'GREEN').reduce((acc, c) => acc + c.value, 0);
+                        if (greenSum > 0) {
+                            const projBrew = (player.currentBrewValue || 0) + greenSum;
+                            const newTrack = TRACK_REWARDS[Math.min(projBrew, TRACK_REWARDS.length - 1)];
+                            projectedVP = newTrack.vp;
+                            projectedMoney = newTrack.money;
+                            projectedRuby = newTrack.ruby ? 1 : 0;
+                        }
+                    }
                 }
 
                 return { vp: projectedVP, money: projectedMoney, rubies: projectedRuby };
@@ -4039,7 +4231,7 @@
                     });
                     
                     initGameData();
-                    gameController.books = gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1;
+                    gameController.books = gameController.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
                     
                     // Update active fortune card reference for the UI string update
                     if (gameController.currentFortuneCard) {
