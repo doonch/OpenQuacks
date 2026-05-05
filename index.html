@@ -1294,6 +1294,7 @@
                 });
 
                 if(this.uiManager) {
+                    this.uiManager.sortPlayers();
                     this.uiManager.updateFullUI();
                     if (this.round > 1 || this.uiManager.hasPlayedStartAnimation) {
                         this.uiManager.playQueuedSackAnimations();
@@ -1494,7 +1495,12 @@
                         p.convertedVP = Math.floor(p.money / 5) + Math.floor(p.rubies / 2);
                         p.victoryPoints += p.convertedVP; 
                     });
-                    if (this.uiManager) { this.uiManager.showGameOver(); document.getElementById('ui-phase').innerText = `(${t('phase_evaluation', 'Evaluation')})`; }
+                    if (this.uiManager) { 
+                        this.uiManager.sortPlayers(); 
+                        this.uiManager.updateFullUI();
+                        this.uiManager.showGameOver(); 
+                        document.getElementById('ui-phase').innerText = `(${t('phase_evaluation', 'Evaluation')})`; 
+                    }
                     return;
                 }
                 
@@ -1525,6 +1531,7 @@
                 this.hasPlayedStartAnimation = false;
                 this.isWitchBonusDie = false;
                 this.tutorialStep = 0; // State for interactive onboarding
+                this.displayPlayers = []; // Cached sorting order
                 
                 this.isDebug = window.location.href.includes('debug=1');
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
@@ -1542,6 +1549,10 @@
                 this.bindEvents(); 
                 this.handleResize();
                 this.startAnimationLoop(); // Continuous loop for fades
+            }
+
+            sortPlayers() {
+                this.displayPlayers = [...this.game.players].sort((a, b) => b.victoryPoints - a.victoryPoints);
             }
 
             unlockAchievement(id) {
@@ -3772,8 +3783,11 @@
 
                     playerListEl.innerHTML = ''; 
                     
-                    // Sort players by VP descending
-                    const sortedPlayers = [...this.game.players].sort((a, b) => b.victoryPoints - a.victoryPoints);
+                    // Use cached order instead of sorting dynamically, so cards don't jump around mid-round
+                    if (this.displayPlayers.length === 0 && this.game.players.length > 0) {
+                        this.sortPlayers();
+                    }
+                    const sortedPlayers = this.displayPlayers;
                     
                     sortedPlayers.forEach(player => {
                         const status = player.exploded ? t('status_exploded', "EXPLODED!") : (player.hasStopped ? t('status_finished', "Finished") : t('status_brewing', "Brewing..."));
@@ -3799,28 +3813,50 @@
                         const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
                         const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(player.character);
                         
-                        let brewHtml = `<div style="display: flex; align-items: center; margin: 3px 0;">${t('ui_brew_value', 'Brew Value:')} <span dir="ltr" style="display: inline-flex; align-items: center;">`;
+                        const isRTL = document.documentElement.dir === 'rtl';
+                        let brewHtml = `<div style="margin: 4px 0;">
+                            <div style="font-size: 0.85em; color: #ccc;">${t('ui_brew_value', 'Brew Value:')}</div>
+                            <div dir="ltr" style="display: flex; align-items: center; flex-wrap: wrap; margin-top: 2px; justify-content: ${isRTL ? 'flex-end' : 'flex-start'};">`;
                         if (pRewards.vp > 0) {
-                            brewHtml += `<span style="color: #f5f5f5; margin-left: 5px;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
+                            brewHtml += `<span style="color: #f5f5f5;">${pRewards.vp}</span><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('VP')}"></span>`;
                         }
-                        brewHtml += `<strong style="color: gold; margin-left: 5px;">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
+                        brewHtml += `<strong style="color: gold; margin-left: ${pRewards.vp > 0 ? '4px' : '0px'};">${pRewards.money}</strong><span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 5px; ${getUtilSpriteStyle('COIN')}"></span>`;
                         if (pRewards.rubies > 0) {
                             if (pRewards.rubies > 1) {
-                                brewHtml += `<span style="color: #ff4444; margin-left: 8px;">${pRewards.rubies}</span>`;
+                                brewHtml += `<span style="color: #ff4444; margin-left: 4px;">${pRewards.rubies}</span>`;
                             }
                             brewHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin-left: 2px; margin-right: 0; ${getUtilSpriteStyle('RUBY')}"></span>`;
                         }
-                        brewHtml += `</span></div>`;
+                        brewHtml += `</div></div>`;
+
+                        const hasSprite = window.GAME_ASSETS && window.GAME_ASSETS.UTILS && window.GAME_ASSETS.UTILS.naturalWidth > 0;
+                        const vpIconHtml = hasSprite 
+                            ? `<div style="width: 48px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000, -1px -1px 3px #000, 1px -1px 3px #000, -1px 1px 3px #000; ${getUtilSpriteStyle('VP')}" title="${t('vp', 'VP')}">${player.victoryPoints}</div>`
+                            : `<div style="width: 48px; height: 48px; border-radius: 50%; background-color: #4a4e69; border: 2px solid gold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; font-weight: bold; color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5);" title="${t('vp', 'VP')}">${player.victoryPoints}</div>`;
+
+                        let rubiesHtml = '';
+                        if (player.rubies >= 4) {
+                            rubiesHtml = `<strong style="color: #ff4444; font-size: 0.9em; margin-right: 3px;">${player.rubies}</strong><span style="width: 16px; height: 16px; display: inline-block; ${getUtilSpriteStyle('RUBY')}"></span>`;
+                        } else {
+                            for (let i = 0; i < player.rubies; i++) {
+                                rubiesHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin: 0 1px; ${getUtilSpriteStyle('RUBY')}"></span>`;
+                            }
+                        }
 
                         card.innerHTML = `
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; ${pFaceStyle}">${emojiStr}</div>
-                                <div style="flex: 1;">
-                                    <strong>${player.name}</strong>
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.name}</strong>
                                     <div style="font-size: 0.9em; margin-top: 5px;">
-                                        <div>${t('vp', 'VP')}: ${player.victoryPoints} | ${t('ruby_plural', 'Rubies')}: ${player.rubies}</div>
                                         ${brewHtml}
-                                        <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}">${status}</div>
+                                        <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${status}</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; min-width: 48px;">
+                                    ${vpIconHtml}
+                                    <div dir="ltr" style="display: flex; align-items: center; justify-content: center; min-height: 16px;" title="${player.rubies} ${t('ruby_plural', 'Rubies')}">
+                                        ${rubiesHtml}
                                     </div>
                                 </div>
                             </div>`;
