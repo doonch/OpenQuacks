@@ -3834,18 +3834,31 @@
                             ? `<div style="width: 48px; height: 60px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.4rem; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px #000, -1px -1px 3px #000, 1px -1px 3px #000, -1px 1px 3px #000; ${getUtilSpriteStyle('VP')}" title="${t('vp', 'VP')}">${player.victoryPoints}</div>`
                             : `<div style="width: 48px; height: 48px; border-radius: 50%; background-color: #4a4e69; border: 2px solid gold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; font-weight: bold; color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5);" title="${t('vp', 'VP')}">${player.victoryPoints}</div>`;
 
+                        let rubiesHtml = '';
+                        if (player.rubies >= 4) {
+                            rubiesHtml = `<strong style="color: #ff4444; font-size: 0.9em; margin-right: 3px;">${player.rubies}</strong><span style="width: 16px; height: 16px; display: inline-block; ${getUtilSpriteStyle('RUBY')}"></span>`;
+                        } else {
+                            for (let i = 0; i < player.rubies; i++) {
+                                rubiesHtml += `<span style="width: 16px; height: 16px; display: inline-block; margin: 0 1px; ${getUtilSpriteStyle('RUBY')}"></span>`;
+                            }
+                        }
+
                         card.innerHTML = `
                             <div style="display: flex; gap: 10px; align-items: center;">
                                 <div style="width: 70px; height: 90px; border-radius: 6px; border: 2px solid ${player.isHuman ? 'gold' : '#aaa'}; flex-shrink: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; ${pFaceStyle}">${emojiStr}</div>
                                 <div style="flex: 1; min-width: 0;">
                                     <strong style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${player.name}</strong>
                                     <div style="font-size: 0.9em; margin-top: 5px;">
-                                        <div>${t('ruby_plural', 'Rubies')}: ${player.rubies}</div>
                                         ${brewHtml}
                                         <div style="color: ${player.exploded ? '#ff4444' : '#aaaaaa'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${status}</div>
                                     </div>
                                 </div>
-                                ${vpIconHtml}
+                                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; min-width: 48px;">
+                                    ${vpIconHtml}
+                                    <div dir="ltr" style="display: flex; align-items: center; justify-content: center; min-height: 16px;" title="${player.rubies} ${t('ruby_plural', 'Rubies')}">
+                                        ${rubiesHtml}
+                                    </div>
+                                </div>
                             </div>`;
                         
                         if (this.isDebug) {
