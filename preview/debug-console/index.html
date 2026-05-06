@@ -2238,7 +2238,7 @@
                 document.getElementById('btn-witch-brew').addEventListener('click', () => {
                     const h = this.game.humanPlayer;
                     h.specialPowerUsed = true;
-                    this.addLog(`<span style="color:gold">[${h.name}]</span> used Witch's Brew.`);
+                    this.addLog(`<span style="color:gold">[${h.name}]</span> exploded but used Witch's Brew and received ${h.roundVP} VP and ${h.roundMoney} Money.`);
                     h.victoryPoints += h.roundVP;
                     h.money += h.roundMoney;
                     document.getElementById('explosion-modal').style.display = 'none';
