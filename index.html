@@ -1019,8 +1019,12 @@
                             await p.game.uiManager.showGhostUpgradeModal(upgradeableChips);
                         } else {
                             // AI behavior: Automatically upgrade the chip that gives the biggest mathematical jump
-                            upgradeableChips.sort((a, b) => (b.toVal - b.chip.value) - (a.toVal - a.chip.value));
-                            const target = upgradeableChips[0];
+                            // AI should NEVER upgrade boomberries!
+                            const safeChips = upgradeableChips.filter(item => item.chip.type.id !== 'WHITE');
+                            if (safeChips.length === 0) return;
+
+                            safeChips.sort((a, b) => (b.toVal - b.chip.value) - (a.toVal - a.chip.value));
+                            const target = safeChips[0];
                             
                             if (p.game.uiManager) {
                                 p.game.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> upgraded <strong style="color:${target.chip.type.color}">${target.chip.type.name} ${target.chip.value}</strong> to <strong style="color:${target.chip.type.color}">${target.chip.type.name} ${target.toVal}</strong>`);
@@ -1528,8 +1532,8 @@
                     p.specialPowerUsed = true;
                     if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Miracle Grow.`);
                     let upgradedColors = [];
-                    const plantTypes = ['WHITE', 'ORANGE', 'RED', 'YELLOW'];
-                    const upgradeMap = { 'WHITE_1': 2, 'WHITE_2': 3, 'ORANGE_1': 6, 'RED_1': 2, 'RED_2': 4, 'YELLOW_1': 2, 'YELLOW_2': 4 };
+                    const plantTypes = ['ORANGE', 'RED', 'YELLOW']; // AI NEVER upgrades WHITE
+                    const upgradeMap = { 'ORANGE_1': 6, 'RED_1': 2, 'RED_2': 4, 'YELLOW_1': 2, 'YELLOW_2': 4 };
                     
                     // Sort by value ascending so AI upgrades lowest value chips first
                     const plants = p.inventory.filter(item => plantTypes.includes(item.type.id)).sort((a, b) => a.value - b.value);
