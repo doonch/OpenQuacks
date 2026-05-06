@@ -443,8 +443,12 @@
 
         <!-- Side Panel (Players & Controls) -->
         <div id="side-panel" class="panel">
-            <div class="panel-title" data-i18n="ui_participants">Players</div>
-            <div id="player-list"></div>
+            <div class="panel-title" data-i18n="ui_participants" style="flex: none;">Players</div>
+            <div id="player-list" style="flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
+            
+            <div id="game-console" style="display: none; background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; flex: 0 0 220px; overflow-y: auto; font-family: monospace; font-size: 0.85em; color: #ddd; flex-direction: column; gap: 4px; margin-top: 15px;">
+                <!-- Logs injected here -->
+            </div>
         </div>
 
         <!-- Cauldron Canvas -->
@@ -845,15 +849,34 @@
                 },
                 GREEN: { 
                     description: t('book1_green', "End of Round: Gain 1 Ruby if your last or second-to-last placed chip is a Spider."),
-                    endOfRound: (p) => { const len = p.cauldron.length; if(len >= 1 && (p.cauldron[len-1].type.id === 'GREEN' || (len >= 2 && p.cauldron[len-2].type.id === 'GREEN'))) p.rubies += 1; } 
+                    endOfRound: (p) => { 
+                        const len = p.cauldron.length; 
+                        if(len >= 1 && (p.cauldron[len-1].type.id === 'GREEN' || (len >= 2 && p.cauldron[len-2].type.id === 'GREEN'))) {
+                            p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Ruby from Spiders.`);
+                        }
+                    } 
                 },
                 PURPLE: { 
                     description: t('book1_purple', "End of Round: 1-2 Moths = 1 VP. 3 or more Moths = 2 VP."),
-                    endOfRound: (p) => { const cnt = p.cauldron.filter(c => c.type.id === 'PURPLE').length; if(cnt===1||cnt===2) p.victoryPoints += 1; else if(cnt>=3) p.victoryPoints += 2; } 
+                    endOfRound: (p) => { 
+                        const cnt = p.cauldron.filter(c => c.type.id === 'PURPLE').length; 
+                        if(cnt > 0) {
+                            const vp = cnt >= 3 ? 2 : 1;
+                            p.victoryPoints += vp; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received ${vp} VP from Moths.`);
+                        }
+                    } 
                 },
                 BLACK: { 
                     description: t('book1_black', "End of Round: If you placed at least 1 Crow Skull, gain 1 VP and 1 Ruby."),
-                    endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) { p.victoryPoints += 1; p.rubies += 1; } } 
+                    endOfRound: (p) => { 
+                        if(p.cauldron.some(c => c.type.id === 'BLACK')) { 
+                            p.victoryPoints += 1; 
+                            p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 VP and 1 Ruby from Crow Skulls.`);
+                        } 
+                    } 
                 }
             };
 
@@ -882,24 +905,48 @@
                 },
                 BLUE: { 
                     description: t('book2_blue', "End of Round: Gain 1 VP for every Blue chip in your cauldron."),
-                    endOfRound: (p) => { const count = p.cauldron.filter(ch => ch.type.id === 'BLUE').length; p.victoryPoints += count; } 
+                    endOfRound: (p) => { 
+                        const count = p.cauldron.filter(ch => ch.type.id === 'BLUE').length; 
+                        if (count > 0) {
+                            p.victoryPoints += count; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received ${count} VP from Ghosts.`);
+                        }
+                    } 
                 },
                 GREEN: { 
                     description: t('book2_green', "End of Round: Gain 1 Droplet step if your last placed chip is a Spider."),
-                    endOfRound: (p) => { const len = p.cauldron.length; if(len >= 1 && p.cauldron[len-1].type.id === 'GREEN') p.dropletPosition += 1; } 
+                    endOfRound: (p) => { 
+                        const len = p.cauldron.length; 
+                        if(len >= 1 && p.cauldron[len-1].type.id === 'GREEN') {
+                            p.dropletPosition += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Droplet step from Spiders.`);
+                        }
+                    } 
                 },
                 PURPLE: { 
                     description: t('book2_purple', "End of Round: 1 Moth = 1 VP. 2 Moths = 1 VP & 1 Ruby. 3+ Moths = 2 VP & 1 Ruby."),
                     endOfRound: (p) => { 
                         const cnt = p.cauldron.filter(ch => ch.type.id === 'PURPLE').length;
-                        if(cnt === 1) { p.victoryPoints += 1; }
-                        else if(cnt === 2) { p.victoryPoints += 1; p.rubies += 1; }
-                        else if(cnt >= 3) { p.victoryPoints += 2; p.rubies += 1; }
+                        if(cnt === 1) { 
+                            p.victoryPoints += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 VP from Moths.`);
+                        } else if(cnt === 2) { 
+                            p.victoryPoints += 1; p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 VP and 1 Ruby from Moths.`);
+                        } else if(cnt >= 3) { 
+                            p.victoryPoints += 2; p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 2 VP and 1 Ruby from Moths.`);
+                        }
                     } 
                 },
                 BLACK: { 
                     description: t('book2_black', "End of Round: If you placed at least 1 Crow Skull, gain 1 Droplet step."),
-                    endOfRound: (p) => { if(p.cauldron.some(c => c.type.id === 'BLACK')) p.dropletPosition += 1; } 
+                    endOfRound: (p) => { 
+                        if(p.cauldron.some(c => c.type.id === 'BLACK')) {
+                            p.dropletPosition += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Droplet step from Crow Skulls.`);
+                        }
+                    } 
                 }
             };
 
@@ -972,8 +1019,17 @@
                             await p.game.uiManager.showGhostUpgradeModal(upgradeableChips);
                         } else {
                             // AI behavior: Automatically upgrade the chip that gives the biggest mathematical jump
-                            upgradeableChips.sort((a, b) => (b.toVal - b.chip.value) - (a.toVal - a.chip.value));
-                            const target = upgradeableChips[0];
+                            // AI should NEVER upgrade boomberries!
+                            const safeChips = upgradeableChips.filter(item => item.chip.type.id !== 'WHITE');
+                            if (safeChips.length === 0) return;
+
+                            safeChips.sort((a, b) => (b.toVal - b.chip.value) - (a.toVal - a.chip.value));
+                            const target = safeChips[0];
+                            
+                            if (p.game.uiManager) {
+                                p.game.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> upgraded <strong style="color:${target.chip.type.color}">${target.chip.type.name} ${target.chip.value}</strong> to <strong style="color:${target.chip.type.color}">${target.chip.type.name} ${target.toVal}</strong>`);
+                            }
+                            
                             const invIndex = p.inventory.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
                             if (invIndex !== -1) p.inventory[invIndex].value = target.toVal;
                             const bagIndex = p.bag.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
@@ -992,6 +1048,7 @@
                                 p.roundVP = newTrack.vp; 
                                 p.roundMoney = newTrack.money; 
                                 p.roundRuby = newTrack.ruby;
+                                if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> used Spiders to boost their brew value by ${sum} spaces!`);
                             }
                         }
                     } 
@@ -1005,8 +1062,14 @@
                         p.game.players.forEach(other => {
                             if (other !== p && myCount > other.cauldron.filter(c => c.type.id === 'PURPLE').length) beaten++;
                         });
-                        if (beaten >= 2) { p.dropletPosition++; p.rubies++; }
-                        else if (beaten === 1) { p.dropletPosition++; }
+                        if (beaten >= 2) { 
+                            p.dropletPosition++; p.rubies++; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> had more moths than ${beaten} other players and received 1 Droplet step and 1 Ruby`);
+                        }
+                        else if (beaten === 1) { 
+                            p.dropletPosition++; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> had more moths than 1 other player and received 1 Droplet step`);
+                        }
                     } 
                 },
                 BLACK: { 
@@ -1308,6 +1371,10 @@
                 
                 if (chip.type.id === 'WHITE') this.currentWhiteValue += chip.value;
 
+                if (this.game.uiManager) {
+                    this.game.uiManager.addLog(`<span style="color:${this.isHuman ? 'gold' : '#ccc'}">[${this.name}]</span> drew <strong style="color:${chip.type.color}">${chip.type.name} ${chip.value}</strong>`);
+                }
+
                 const book = this.game.books[chip.type.id];
                 if (book && book.immediate) book.immediate(this, placedChip);
 
@@ -1316,6 +1383,9 @@
                     this.exploded = true; 
                     this.explodedAt = Date.now();
                     this.hasStopped = true; 
+                    if (this.game.uiManager) {
+                        this.game.uiManager.addLog(`<span style="color:#ff4444; font-weight:bold;">💥 [${this.name}] exploded!</span>`);
+                    }
                 } else if (this.bag.length === 0) {
                     this.hasStopped = true; // Automatically stop if the bag is empty
                 }
@@ -1329,7 +1399,13 @@
                 this.cauldron.pop();
                 this.currentBrewValue -= lastChip.value; this.currentWhiteValue -= lastChip.value;
                 this.bag.push({ type: lastChip.type, value: lastChip.value });
-                this.flaskActive = false; return true;
+                this.flaskActive = false; 
+                
+                if (this.game.uiManager) {
+                    this.game.uiManager.addLog(`<span style="color:${this.isHuman ? 'gold' : '#ccc'}">[${this.name}]</span> used the flask.`);
+                }
+                
+                return true;
             }
 
             getExplosionProbability(explosionThreshold) {
@@ -1389,6 +1465,10 @@
                 this.config.explosionThreshold = 7; // Reset threshold in case it was altered
                 this.config.orangeExtraSpace = false; // Reset the extra space flag
                 
+                if (this.uiManager) {
+                    this.uiManager.addLog(`<div style="margin-top: 15px; padding-bottom: 2px; border-bottom: 1px solid #4a4e69; color: var(--accent); font-weight: bold; text-transform: uppercase;">Day ${this.round} of ${this.config.totalRounds}</div>`);
+                }
+
                 // Day 6 specific rule: Everyone gets a new White-1 token before the round begins
                 if (this.round === 6) {
                     this.players.forEach(p => {
@@ -1450,9 +1530,10 @@
                 // AI Gardener Power Logic
                 if (this.config.useCharacterPowers && p.character === 'GARDENER' && !p.specialPowerUsed && this.phase === 'Brewing') {
                     p.specialPowerUsed = true;
+                    if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Miracle Grow.`);
                     let upgradedColors = [];
-                    const plantTypes = ['WHITE', 'ORANGE', 'RED', 'YELLOW'];
-                    const upgradeMap = { 'WHITE_1': 2, 'WHITE_2': 3, 'ORANGE_1': 6, 'RED_1': 2, 'RED_2': 4, 'YELLOW_1': 2, 'YELLOW_2': 4 };
+                    const plantTypes = ['ORANGE', 'RED', 'YELLOW']; // AI NEVER upgrades WHITE
+                    const upgradeMap = { 'ORANGE_1': 6, 'RED_1': 2, 'RED_2': 4, 'YELLOW_1': 2, 'YELLOW_2': 4 };
                     
                     // Sort by value ascending so AI upgrades lowest value chips first
                     const plants = p.inventory.filter(item => plantTypes.includes(item.type.id)).sort((a, b) => a.value - b.value);
@@ -1460,6 +1541,7 @@
                         if (upgradedColors.length >= 2) break;
                         const key = `${item.type.id}_${item.value}`;
                         if (upgradeMap[key] && !upgradedColors.includes(item.type.id)) {
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> upgraded <strong style="color:${item.type.color}">${item.type.name} ${item.value}</strong> to <strong style="color:${item.type.color}">${item.type.name} ${upgradeMap[key]}</strong>`);
                             item.value = upgradeMap[key];
                             upgradedColors.push(item.type.id);
                         }
@@ -1475,6 +1557,7 @@
                         const nwToken = p.bag.find(c => c.type.id !== 'WHITE' && c.value === neededVal);
                         if (nwToken) {
                             p.specialPowerUsed = true;
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Voodoo Sacrifice, discarding <strong style="color:${w.type.color}">${w.type.name} ${w.value}</strong> and <strong style="color:${nwToken.type.color}">${nwToken.type.name} ${nwToken.value}</strong>.`);
                             p.bag.splice(p.bag.indexOf(w), 1);
                             p.bag.splice(p.bag.indexOf(nwToken), 1);
                             p.inventory.splice(p.inventory.indexOf(w), 1);
@@ -1490,6 +1573,7 @@
                         const lastChip = p.cauldron[p.cauldron.length - 1];
                         if (lastChip.type.id !== 'WHITE' && lastChip.value >= 2) {
                             p.specialPowerUsed = true;
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Phantom Clone.`);
                             // Clone 1
                             let np = p.currentBrewValue + lastChip.value;
                             let clone1 = { ...lastChip, spaceIndex: np, drawnAt: Date.now() };
@@ -1522,18 +1606,27 @@
                     if (probExplode >= thresholdT) { 
                         if (this.config.useCharacterPowers && p.character === 'MONK' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Meditation.`);
                             p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 3;
                             continue; // Skip the stop, re-evaluate with the new threshold next tick
                         }
                         p.hasStopped = true; 
+                        if (this.uiManager) {
+                            const rewards = this.uiManager.getProjectedRewards(p);
+                            this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> sold potion for ${rewards.vp} VP and ${rewards.money} Money.`);
+                        }
                     } else {
                         p.drawChip();
+                        if (p.hasStopped && !p.exploded && this.uiManager) {
+                            const rewards = this.uiManager.getProjectedRewards(p);
+                            this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> bag empty, sold potion for ${rewards.vp} VP and ${rewards.money} Money.`);
+                        }
                     }
                     
                     if (this.uiManager) this.uiManager.updateFullUI();
                 }
                 
-                if (!p.exploded) p.hasStopped = true;
+                if (!p.exploded && !p.hasStopped) p.hasStopped = true;
                 if (this.uiManager) this.uiManager.updateFullUI();
                 this.checkBrewingPhaseEnd();
             }
@@ -1562,6 +1655,9 @@
                 eligiblePlayers.forEach(p => {
                     const face = BONUS_DIE_FACES[Math.floor(Math.random() * BONUS_DIE_FACES.length)];
                     face.apply(p);
+                    if (this.uiManager) {
+                        this.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> rolled the bonus die and received ${face.text}`);
+                    }
                     if (p.isHuman) {
                         humanRolled = true;
                         humanResultFace = face;
@@ -1598,10 +1694,18 @@
                                 p.specialPowerUsed = true;
                                 p.victoryPoints += p.roundVP;
                                 p.money += p.roundMoney;
+                                if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> exploded but used Witch's Brew and received ${p.roundVP} VP and ${p.roundMoney} Money.`);
                                 const face = BONUS_DIE_FACES[Math.floor(Math.random() * BONUS_DIE_FACES.length)];
                                 face.apply(p);
+                                if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> rolled the bonus die and received ${face.text}`);
                             } else {
-                                if (this.round > 6) p.victoryPoints += p.roundVP; else p.money += p.roundMoney; 
+                                if (this.round > 6) {
+                                    p.victoryPoints += p.roundVP; 
+                                    if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> exploded and received ${p.roundVP} VP.`);
+                                } else {
+                                    p.money += p.roundMoney; 
+                                    if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> exploded and received ${p.roundMoney} Money.`);
+                                }
                             }
                         }
                         else { p.victoryPoints += p.roundVP; p.money += p.roundMoney; }
@@ -1665,6 +1769,11 @@
                 this.isDebug = window.location.href.includes('debug=1');
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
 
+                if (this.isDebug) {
+                    const consoleEl = document.getElementById('game-console');
+                    if (consoleEl) consoleEl.style.display = 'flex';
+                }
+
                 if (Object.keys(this.unlockedAchievements).length > 0) {
                     document.getElementById('btn-achievements').style.display = 'flex';
                 }
@@ -1678,6 +1787,16 @@
                 this.bindEvents(); 
                 this.handleResize();
                 this.startAnimationLoop(); // Continuous loop for fades
+            }
+
+            addLog(msg) {
+                const consoleEl = document.getElementById('game-console');
+                if (!consoleEl) return;
+                const entry = document.createElement('div');
+                entry.style.cssText = "padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05); line-height: 1.3;";
+                entry.innerHTML = msg;
+                consoleEl.appendChild(entry);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
             }
 
             sortPlayers() {
@@ -2095,6 +2214,10 @@
                     
                     document.getElementById('sell-modal').style.display = 'none';
                     this.game.humanPlayer.hasStopped = true; 
+                    
+                    const rewards = this.getProjectedRewards(this.game.humanPlayer);
+                    this.addLog(`<span style="color:gold">[${this.game.humanPlayer.name}]</span> sold potion for ${rewards.vp} VP and ${rewards.money} Money.`);
+
                     this.updateFullUI(); 
                     this.game.checkBrewingPhaseEnd();
                 });
@@ -2115,12 +2238,14 @@
                 document.getElementById('btn-witch-brew').addEventListener('click', () => {
                     const h = this.game.humanPlayer;
                     h.specialPowerUsed = true;
+                    this.addLog(`<span style="color:gold">[${h.name}]</span> exploded but used Witch's Brew and received ${h.roundVP} VP and ${h.roundMoney} Money.`);
                     h.victoryPoints += h.roundVP;
                     h.money += h.roundMoney;
                     document.getElementById('explosion-modal').style.display = 'none';
 
                     const face = BONUS_DIE_FACES[Math.floor(Math.random() * BONUS_DIE_FACES.length)];
                     face.apply(h);
+                    this.addLog(`<span style="color:gold">[${h.name}]</span> rolled the bonus die and received ${face.text}`);
 
                     this.isWitchBonusDie = true;
                     this.showBonusDieModal(face, h.roundMoney);
@@ -2129,8 +2254,9 @@
                 document.getElementById('btn-meditation')?.addEventListener('click', () => {
                     if (this.tutorialStep > 0) return;
                     const h = this.game.humanPlayer;
-                    if (this.game.config.useCharacterPowers && h.character === 'MONK' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
+                    if (this.game.config.useCharacterPowers && h.character === 'MONK' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && this.game.phase === 'Brewing') {
                         h.specialPowerUsed = true;
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> used Meditation.`);
                         h.explosionLimitOffset = (h.explosionLimitOffset || 0) + 3;
                         this.updateFullUI();
                     }
@@ -2139,8 +2265,9 @@
                 document.getElementById('btn-miracle-gro')?.addEventListener('click', () => {
                     if (this.tutorialStep > 0) return;
                     const h = this.game.humanPlayer;
-                    if (this.game.config.useCharacterPowers && h.character === 'GARDENER' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
+                    if (this.game.config.useCharacterPowers && h.character === 'GARDENER' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && this.game.phase === 'Brewing') {
                         h.specialPowerUsed = true; // Use it up
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> used Miracle Grow.`);
                         this.showMiracleGroModal();
                         this.updateFullUI(); // Hide button
                     }
@@ -2149,8 +2276,9 @@
                 document.getElementById('btn-sugar-rush')?.addEventListener('click', () => {
                     if (this.tutorialStep > 0) return;
                     const h = this.game.humanPlayer;
-                    if (this.game.config.useCharacterPowers && h.character === 'CHILD' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
+                    if (this.game.config.useCharacterPowers && h.character === 'CHILD' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && this.game.phase === 'Brewing') {
                         h.specialPowerUsed = true; // Use it up
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> used Sugar Rush.`);
                         this.showSugarRushModal();
                         this.updateFullUI(); // Hide button
                     }
@@ -2159,7 +2287,7 @@
                 document.getElementById('btn-voodoo-sac')?.addEventListener('click', () => {
                     if (this.tutorialStep > 0) return;
                     const h = this.game.humanPlayer;
-                    if (this.game.config.useCharacterPowers && h.character === 'VOODOO_LADY' && !h.specialPowerUsed && !h.exploded && !h.hasStopped) {
+                    if (this.game.config.useCharacterPowers && h.character === 'VOODOO_LADY' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && this.game.phase === 'Brewing') {
                         this.showVoodooSacModal();
                     }
                 });
@@ -2169,6 +2297,7 @@
                     const h = this.game.humanPlayer;
                     if (this.game.config.useCharacterPowers && h.character === 'WIZARD' && !h.specialPowerUsed && !h.exploded && !h.hasStopped && h.cauldron.length > 0) {
                         h.specialPowerUsed = true;
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> used Phantom Clone.`);
                         const lastChip = h.cauldron[h.cauldron.length - 1];
                         const wasExploded = h.exploded;
 
@@ -2210,12 +2339,14 @@
 
                 document.getElementById('btn-choose-vp').addEventListener('click', () => { 
                     this.game.humanPlayer.victoryPoints += this.game.humanPlayer.roundVP; 
+                    this.addLog(`<span style="color:gold">[${this.game.humanPlayer.name}]</span> exploded and received ${this.game.humanPlayer.roundVP} VP.`);
                     document.getElementById('explosion-modal').style.display = 'none'; 
                     this.startBuyingPhase(); 
                 });
                 
                 document.getElementById('btn-choose-money').addEventListener('click', () => { 
                     this.game.humanPlayer.money += this.game.humanPlayer.roundMoney; 
+                    this.addLog(`<span style="color:gold">[${this.game.humanPlayer.name}]</span> exploded and received ${this.game.humanPlayer.roundMoney} Money.`);
                     document.getElementById('explosion-modal').style.display = 'none'; 
                     this.startBuyingPhase(); 
                 });
@@ -2416,6 +2547,7 @@
                                     h.bag[bagIndex] = { type: item.type, value: upgradeMap[key] };
                                 }
                                 
+                                this.addLog(`<span style="color:gold">[${h.name}]</span> upgraded <strong style="color:${item.type.color}">${item.type.name} ${item.value}</strong> to <strong style="color:${item.type.color}">${item.type.name} ${upgradeMap[key]}</strong>`);
                                 item.value = upgradeMap[key]; // Update local item for UI re-render
                                 
                                 updateView(); // re-evaluates all disabled states
@@ -2463,6 +2595,7 @@
                             const bagIndex = h.bag.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
                             if (bagIndex !== -1) h.bag[bagIndex].value = toVal;
                             
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> upgraded <strong style="color:${chip.type.color}">${chip.type.name} ${chip.value}</strong> to <strong style="color:${chip.type.color}">${chip.type.name} ${toVal}</strong>`);
                             document.getElementById('ghost-upgrade-modal').style.display = 'none';
                             resolve(true); 
                         };
@@ -2658,6 +2791,7 @@
                             h.inventory.splice(h.inventory.indexOf(selectedNonWhite), 1);
 
                             h.specialPowerUsed = true;
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> used Voodoo Sacrifice, discarding <strong style="color:${selectedWhite.type.color}">${selectedWhite.type.name} ${selectedWhite.value}</strong> and <strong style="color:${selectedNonWhite.type.color}">${selectedNonWhite.type.name} ${selectedNonWhite.value}</strong>.`);
                             document.getElementById('voodoo-sac-modal').style.display = 'none';
                             this.updateFullUI();
                         }
@@ -3028,6 +3162,7 @@
                         if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
                             p.specialPowerActive = true;
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Bard's Charm.`);
                             p.rubies += 3;
                         }
 
@@ -3037,6 +3172,7 @@
                             if (this.game.round >= 8 || p.money >= 20) {
                                 p.specialPowerUsed = true;
                                 p.specialPowerActive = true;
+                                if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Royal Decree.`);
                                 p.money *= 2;
                             }
                         }
@@ -3048,6 +3184,7 @@
                         while (p.rubies >= dropCost) {
                             p.rubies -= dropCost;
                             p.dropletPosition++;
+                            if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
                         }
 
                         let boughtColors = [];
@@ -3068,6 +3205,7 @@
                                 const buy = available[0];
                                 p.buyChip(buy.type, buy.value, buy.cost);
                                 boughtColors.push(buy.type.id);
+                                if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought <strong style="color:${buy.type.color}">${buy.type.name} ${buy.value}</strong> for ${buy.cost} Money.`);
                             } else {
                                 break; // Break out if no affordable items are left
                             }
@@ -3125,6 +3263,8 @@
                         if (h.buyChip(item.type, item.value, item.cost)) { 
                             h.moneySpentThisRound = (h.moneySpentThisRound || 0) + item.cost;
                             
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> bought <strong style="color:${item.type.color}">${item.type.name} ${item.value}</strong> for ${item.cost} Money.`);
+                            
                             if (item.type.id === 'ORANGE' && item.value === 6) {
                                 this.unlockAchievement('MEGA_PUMPKIN');
                             }
@@ -3156,6 +3296,7 @@
                         bardEl.addEventListener('click', () => {
                             h.specialPowerUsed = true;
                             h.specialPowerActive = true;
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> used Bard's Charm.`);
                             h.rubies += 3;
                             this.renderShopUI();
                         });
@@ -3177,6 +3318,7 @@
                         princessEl.addEventListener('click', () => {
                             h.specialPowerUsed = true;
                             h.specialPowerActive = true;
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> used Royal Decree.`);
                             h.money *= 2;
                             this.renderShopUI();
                         });
@@ -3199,6 +3341,7 @@
                     dropletEl.addEventListener('click', () => {
                         h.rubies -= dropCost;
                         h.dropletPosition++;
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
                         if (h.dropletPosition >= 18) {
                             this.unlockAchievement('STAY_HYDRATED');
                         }
@@ -3228,6 +3371,7 @@
                     flaskEl.addEventListener('click', () => {
                         h.rubies -= flaskCost;
                         h.flaskActive = true;
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> refilled Flask for ${flaskCost} Rubies.`);
                         this.renderShopUI();
                     });
                 }
@@ -3247,6 +3391,7 @@
                 if (canAffordBag) {
                     bagEl.addEventListener('click', () => {
                         h.rubies -= bagCost;
+                        if (bagCost > 0) this.addLog(`<span style="color:gold">[${h.name}]</span> paid ${bagCost} Ruby to view Bag.`);
                         this.renderShopUI();
                         this.showBagModal(); // Calls default, which is human player
                     });
