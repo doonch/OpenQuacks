@@ -1395,7 +1395,13 @@
                 this.cauldron.pop();
                 this.currentBrewValue -= lastChip.value; this.currentWhiteValue -= lastChip.value;
                 this.bag.push({ type: lastChip.type, value: lastChip.value });
-                this.flaskActive = false; return true;
+                this.flaskActive = false; 
+                
+                if (this.game.uiManager) {
+                    this.game.uiManager.addLog(`<span style="color:${this.isHuman ? 'gold' : '#ccc'}">[${this.name}]</span> used the flask.`);
+                }
+                
+                return true;
             }
 
             getExplosionProbability(explosionThreshold) {
