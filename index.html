@@ -446,7 +446,7 @@
             <div class="panel-title" data-i18n="ui_participants" style="flex: none;">Players</div>
             <div id="player-list" style="flex: 1; overflow-y: auto; min-height: 0; padding-right: 5px;"></div>
             
-            <div id="game-console" style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; flex: 0 0 220px; overflow-y: auto; font-family: monospace; font-size: 0.85em; color: #ddd; display: flex; flex-direction: column; gap: 4px; margin-top: 15px;">
+            <div id="game-console" style="display: none; background: rgba(0,0,0,0.5); border-radius: 8px; padding: 10px; flex: 0 0 220px; overflow-y: auto; font-family: monospace; font-size: 0.85em; color: #ddd; flex-direction: column; gap: 4px; margin-top: 15px;">
                 <!-- Logs injected here -->
             </div>
         </div>
@@ -1768,6 +1768,11 @@
                 
                 this.isDebug = window.location.href.includes('debug=1');
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
+
+                if (this.isDebug) {
+                    const consoleEl = document.getElementById('game-console');
+                    if (consoleEl) consoleEl.style.display = 'flex';
+                }
 
                 if (Object.keys(this.unlockedAchievements).length > 0) {
                     document.getElementById('btn-achievements').style.display = 'flex';
