@@ -2448,7 +2448,7 @@
                         const upgradeStyle = getChipSpriteStyle(chip.type.id, toVal);
                         
                         elWrapper.innerHTML = `
-                            <div style="display: flex; align-items: center; gap: 15px;">
+                            <div dir="ltr" style="display: flex; align-items: center; gap: 15px;">
                                 <div class="chip-icon" style="width: 50px; height: 50px; ${originalStyle || `background-color: ${chip.type.color};`}">${!originalStyle ? chip.value : ''}</div>
                                 <span style="color: gold; font-weight: bold; font-size: 1.5rem;">➔</span>
                                 <div class="chip-icon" style="width: 50px; height: 50px; ${upgradeStyle || `background-color: ${chip.type.color};`}">${!upgradeStyle ? toVal : ''}</div>
