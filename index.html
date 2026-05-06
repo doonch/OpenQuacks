@@ -1557,7 +1557,7 @@
                         const nwToken = p.bag.find(c => c.type.id !== 'WHITE' && c.value === neededVal);
                         if (nwToken) {
                             p.specialPowerUsed = true;
-                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Voodoo Sacrifice.`);
+                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Voodoo Sacrifice, discarding <strong style="color:${w.type.color}">${w.type.name} ${w.value}</strong> and <strong style="color:${nwToken.type.color}">${nwToken.type.name} ${nwToken.value}</strong>.`);
                             p.bag.splice(p.bag.indexOf(w), 1);
                             p.bag.splice(p.bag.indexOf(nwToken), 1);
                             p.inventory.splice(p.inventory.indexOf(w), 1);
@@ -2786,7 +2786,7 @@
                             h.inventory.splice(h.inventory.indexOf(selectedNonWhite), 1);
 
                             h.specialPowerUsed = true;
-                            this.addLog(`<span style="color:gold">[${h.name}]</span> used Voodoo Sacrifice.`);
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> used Voodoo Sacrifice, discarding <strong style="color:${selectedWhite.type.color}">${selectedWhite.type.name} ${selectedWhite.value}</strong> and <strong style="color:${selectedNonWhite.type.color}">${selectedNonWhite.type.name} ${selectedNonWhite.value}</strong>.`);
                             document.getElementById('voodoo-sac-modal').style.display = 'none';
                             this.updateFullUI();
                         }
