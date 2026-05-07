@@ -799,6 +799,7 @@
                             if (p.isHuman && g.uiManager) {
                                 g.uiManager.queueSackAnimation({ typeId: 'GREEN', value: 1, color: INGREDIENTS.GREEN.color, textCol: INGREDIENTS.GREEN.textCol });
                             }
+                            if(g.uiManager) g.uiManager.addLog(`Fortune: <span style="color:${p.isHuman?'gold':'#ccc'}">[${p.name}]</span> received a Spider token.`);
                         }
                     });
                 }}
@@ -841,11 +842,30 @@
                 },
                 YELLOW: { 
                     description: t('book1_yellow', "If the previous chip was a Boomberry, its white value is cancelled."),
-                    immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); } 
+                    immediate: (p, c) => { 
+                        if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') {
+                            p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake cancelled the previous Boomberry!`);
+                        }
+                    } 
                 },
                 BLUE: { 
                     description: t('book1_blue', "Draw 1 extra chip. If ingredient, place it for free! If Boomberry, return to bag."),
-                    immediate: (p, c) => { if(p.bag.length > 0) { const idx = Math.floor(Math.random() * p.bag.length); const next = p.bag[idx]; if(next.type.id !== 'WHITE') { p.bag.splice(idx, 1); const np = p.currentBrewValue + next.value; p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); p.currentBrewValue = np; } } } 
+                    immediate: (p, c) => { 
+                        if(p.bag.length > 0) { 
+                            const idx = Math.floor(Math.random() * p.bag.length); 
+                            const next = p.bag[idx]; 
+                            if(next.type.id !== 'WHITE') { 
+                                p.bag.splice(idx, 1); 
+                                const np = p.currentBrewValue + next.value; 
+                                p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); 
+                                p.currentBrewValue = np; 
+                                if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a free <strong style="color:${next.type.color}">${next.type.name} ${next.value}</strong>!`);
+                            } else {
+                                if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a Boomberry, left it in the bag.`);
+                            }
+                        } 
+                    } 
                 },
                 GREEN: { 
                     description: t('book1_green', "End of Round: Gain 1 Ruby if your last or second-to-last placed chip is a Spider."),
@@ -901,7 +921,12 @@
                 },
                 YELLOW: { 
                     description: t('book2_yellow', "If the previous chip was a Boomberry, gain 1 Ruby immediately."),
-                    immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.rubies += 1; } 
+                    immediate: (p, c) => { 
+                        if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') {
+                            p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake found a Ruby next to a Boomberry.`);
+                        }
+                    } 
                 },
                 BLUE: { 
                     description: t('book2_blue', "End of Round: Gain 1 VP for every Blue chip in your cauldron."),
@@ -977,6 +1002,7 @@
                         const count = p.cauldron.filter(ch => ch.type.id === 'YELLOW').length;
                         if (count === 1 || count === 3) {
                             p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake increased their explosion limit by 1!`);
                         }
                     } 
                 },
@@ -1019,7 +1045,6 @@
                             await p.game.uiManager.showGhostUpgradeModal(upgradeableChips);
                         } else {
                             // AI behavior: Automatically upgrade the chip that gives the biggest mathematical jump
-                            // AI should NEVER upgrade boomberries!
                             const safeChips = upgradeableChips.filter(item => item.chip.type.id !== 'WHITE');
                             if (safeChips.length === 0) return;
 
@@ -1076,7 +1101,10 @@
                     description: t('book3_black', "Immediately gain 1 Ruby if placed on a Ruby space."),
                     immediate: (p, c) => { 
                         const spaceInfo = TRACK_REWARDS[Math.min(c.spaceIndex, TRACK_REWARDS.length - 1)];
-                        if (spaceInfo && spaceInfo.ruby) p.rubies++;
+                        if (spaceInfo && spaceInfo.ruby) {
+                            p.rubies++;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Crow Skull landed on a Ruby space and gained 1 Ruby!`);
+                        }
                     } 
                 }
             };
@@ -1485,6 +1513,7 @@
 
                 if (!isTutorial) {
                     this.currentFortuneCard = FORTUNE_CARDS[Math.floor(Math.random() * FORTUNE_CARDS.length)];
+                    if (this.uiManager) this.uiManager.addLog(`🎴 Fortune Card: "${this.currentFortuneCard.text}"`);
                     if (this.currentFortuneCard.type === 'immediate') this.currentFortuneCard.apply(this);
                 } else {
                     this.currentFortuneCard = null;
@@ -1493,6 +1522,11 @@
                 const maxVp = Math.max(...this.players.map(p => p.victoryPoints));
                 this.players.forEach(p => {
                     p.ratTails = p.victoryPoints === maxVp ? 0 : VP_RAT_SPACES.filter(s => s > p.victoryPoints && s <= maxVp).length;
+                    
+                    if (p.ratTails > 0 && this.uiManager) {
+                        this.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received ${p.ratTails} Rat Tails.`);
+                    }
+
                     p.prepareForNewRound();
                     
                     if (p.isHuman && p.ratTails >= 20 && this.uiManager) {
@@ -1722,11 +1756,16 @@
 
             endRound() {
                 if (this.round === 9) {
+                    if (this.uiManager) this.uiManager.addLog(`<div style="margin-top: 15px; padding-bottom: 2px; border-bottom: 1px solid #4a4e69; color: var(--accent); font-weight: bold; text-transform: uppercase;">Final Scoring</div>`);
                     this.players.forEach(p => { 
                         p.finalMoney = p.money;
                         p.finalRubies = p.rubies;
                         p.convertedVP = Math.floor(p.money / 5) + Math.floor(p.rubies / 2);
                         p.victoryPoints += p.convertedVP; 
+                        
+                        if (this.uiManager) {
+                            this.uiManager.addLog(`End of Game: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> converted ${p.money} Money and ${p.rubies} Rubies into ${p.convertedVP} VP. Final score: ${p.victoryPoints} VP.`);
+                        }
                     });
                     if (this.uiManager) { 
                         this.uiManager.sortPlayers(); 
@@ -1790,6 +1829,7 @@
             }
 
             addLog(msg) {
+                if (!this.isDebug) return;
                 const consoleEl = document.getElementById('game-console');
                 if (!consoleEl) return;
                 const entry = document.createElement('div');
@@ -2121,6 +2161,11 @@
 
                 const wasExploded = this.game.humanPlayer.exploded;
                 this.game.humanPlayer.drawChip(); 
+
+                if (!wasExploded && !this.game.humanPlayer.exploded && this.game.humanPlayer.hasStopped) {
+                    const rewards = this.getProjectedRewards(this.game.humanPlayer);
+                    this.addLog(`<span style="color:gold">[${this.game.humanPlayer.name}]</span> bag empty, sold potion for ${rewards.vp} VP and ${rewards.money} Money.`);
+                }
 
                 if (this.tutorialStep === 1 && this.game.humanPlayer.cauldron.length === 1) {
                     this.tutorialStep = 1.5;
@@ -2469,6 +2514,7 @@
                         this.unlockAchievement('META_CHARLATAN');
                         document.getElementById('debug-draw-modal').style.display = 'none';
                         p.victoryPoints = 0; // Penalty for picking token
+                        this.addLog(`🛠️ <span style="color:gold">[${p.name}]</span> used a cheat to place <strong style="color:${item.type.color}">${item.type.name} ${item.value}</strong> (VP penalized to 0)`);
                         
                         const wasExploded = p.exploded;
                         p.drawChip(index);
@@ -2605,6 +2651,7 @@
                     const skipBtn = document.getElementById('btn-skip-ghost-upgrade');
                     if (skipBtn) {
                         skipBtn.onclick = () => {
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> skipped their Ghostly Exchange.`);
                             document.getElementById('ghost-upgrade-modal').style.display = 'none';
                             resolve(false); // User chose not to upgrade anything
                         };
@@ -3162,7 +3209,7 @@
                         if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
                             p.specialPowerActive = true;
-                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Bard's Charm.`);
+                            this.addLog(`<span style="color:#ccc">[${p.name}]</span> used Bard's Charm.`);
                             p.rubies += 3;
                         }
 
@@ -3172,7 +3219,7 @@
                             if (this.game.round >= 8 || p.money >= 20) {
                                 p.specialPowerUsed = true;
                                 p.specialPowerActive = true;
-                                if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Royal Decree.`);
+                                this.addLog(`<span style="color:#ccc">[${p.name}]</span> used Royal Decree.`);
                                 p.money *= 2;
                             }
                         }
@@ -3184,7 +3231,7 @@
                         while (p.rubies >= dropCost) {
                             p.rubies -= dropCost;
                             p.dropletPosition++;
-                            if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
+                            this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
                         }
 
                         let boughtColors = [];
@@ -3205,7 +3252,7 @@
                                 const buy = available[0];
                                 p.buyChip(buy.type, buy.value, buy.cost);
                                 boughtColors.push(buy.type.id);
-                                if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought <strong style="color:${buy.type.color}">${buy.type.name} ${buy.value}</strong> for ${buy.cost} Money.`);
+                                this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought <strong style="color:${buy.type.color}">${buy.type.name} ${buy.value}</strong> for ${buy.cost} Money.`);
                             } else {
                                 break; // Break out if no affordable items are left
                             }
