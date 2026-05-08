@@ -540,6 +540,14 @@
                 <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_sound_desc">Enable or disable bubbling and explosion audio.</p>
             </div>
 
+            <div style="margin-top: 10px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="settings-console-checkbox" style="width: 20px; height: 20px; cursor: pointer;">
+                    <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_console">Show Event Log</strong>
+                </label>
+                <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_console_desc">Display a console tracking all game events and AI actions.</p>
+            </div>
+
             <div id="install-section" style="margin-top: 15px; text-align: start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; display: none;">
                 <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_install_title">📲 Install as App</strong>
                 <p style="margin: 5px 0 10px 0; font-size: 0.85em; color: #aaa;" data-i18n="settings_install_desc">Run full-screen, work offline, no browser bars.</p>
@@ -1806,11 +1814,12 @@
                 this.displayPlayers = []; // Cached sorting order
                 
                 this.isDebug = window.location.href.includes('debug=1');
+                this.showEventLog = getCookie('showEventLog') === '1'; // Default is disabled
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
 
-                if (this.isDebug) {
-                    const consoleEl = document.getElementById('game-console');
-                    if (consoleEl) consoleEl.style.display = 'flex';
+                const consoleEl = document.getElementById('game-console');
+                if (consoleEl) {
+                    consoleEl.style.display = this.showEventLog ? 'flex' : 'none';
                 }
 
                 if (Object.keys(this.unlockedAchievements).length > 0) {
@@ -1829,7 +1838,6 @@
             }
 
             addLog(msg) {
-                if (!this.isDebug) return;
                 const consoleEl = document.getElementById('game-console');
                 if (!consoleEl) return;
                 const entry = document.createElement('div');
@@ -2964,6 +2972,19 @@
                         const val = e.target.checked;
                         setCookie('soundEnabled', val ? '1' : '0', 365);
                         applySoundSettings();
+                    };
+                }
+
+                // Event Log Setting
+                const consoleCheckbox = document.getElementById('settings-console-checkbox');
+                if (consoleCheckbox) {
+                    consoleCheckbox.checked = this.showEventLog;
+                    consoleCheckbox.onchange = (e) => {
+                        const val = e.target.checked;
+                        setCookie('showEventLog', val ? '1' : '0', 365);
+                        this.showEventLog = val;
+                        const consoleEl = document.getElementById('game-console');
+                        if (consoleEl) consoleEl.style.display = val ? 'flex' : 'none';
                     };
                 }
 
