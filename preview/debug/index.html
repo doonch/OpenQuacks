@@ -1068,9 +1068,9 @@
                             }
                             
                             const invIndex = p.inventory.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
-                            if (invIndex !== -1) p.inventory[invIndex].value = target.toVal;
+                            if (invIndex !== -1) p.inventory[invIndex] = { type: target.chip.type, value: target.toVal };
                             const bagIndex = p.bag.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
-                            if (bagIndex !== -1) p.bag[bagIndex].value = target.toVal;
+                            if (bagIndex !== -1) p.bag[bagIndex] = { type: target.chip.type, value: target.toVal };
                         }
                     } 
                 },
@@ -2648,10 +2648,10 @@
                         elWrapper.onclick = () => {
                             // Apply the upgrade to the player's permanent bag
                             const invIndex = h.inventory.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
-                            if (invIndex !== -1) h.inventory[invIndex].value = toVal;
+                            if (invIndex !== -1) h.inventory[invIndex] = { type: chip.type, value: toVal };
                             
                             const bagIndex = h.bag.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
-                            if (bagIndex !== -1) h.bag[bagIndex].value = toVal;
+                            if (bagIndex !== -1) h.bag[bagIndex] = { type: chip.type, value: toVal };
                             
                             this.addLog(`<span style="color:gold">[${h.name}]</span> upgraded <strong style="color:${chip.type.color}">${chip.type.name} ${chip.value}</strong> to <strong style="color:${chip.type.color}">${chip.type.name} ${toVal}</strong>`);
                             document.getElementById('ghost-upgrade-modal').style.display = 'none';
