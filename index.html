@@ -866,9 +866,13 @@
                             if(next.type.id !== 'WHITE') { 
                                 p.bag.splice(idx, 1); 
                                 const np = p.currentBrewValue + next.value; 
-                                p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); 
+                                const placedChip = { ...next, spaceIndex: np, drawnAt: Date.now() };
+                                p.cauldron.push(placedChip); 
                                 p.currentBrewValue = np; 
                                 if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a free <strong style="color:${next.type.color}">${next.type.name} ${next.value}</strong>!`);
+                                
+                                const nextBook = p.game.books[placedChip.type.id];
+                                if (nextBook && nextBook.immediate) nextBook.immediate(p, placedChip);
                             } else {
                                 if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a Boomberry, left it in the bag.`);
                             }
