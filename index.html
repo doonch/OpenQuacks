@@ -354,15 +354,15 @@
 
         .icon-small { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 5px; }
 
-        /* --- Mobile / Narrow Screen Responsive Layout --- */
-        /* In mobile mode the body itself scrolls (matching upstream).
+        /* --- Mobile / Tablet Portrait Responsive Layout --- */
+        /* In portrait mode the body itself scrolls (matching upstream).
            We tried locking body and scrolling #game-container instead
            for a more "native" feel, but that broke the tutorial flow:
            #tutorial-overlay (pointer-events: auto) catches scroll
            gestures, and iOS Safari can't redirect them through to a
            constrained scrollable child the way it natively scrolls
            the body underneath a fixed overlay. Body-scroll wins. */
-        @media (max-aspect-ratio: 2/3) {
+        @media (max-aspect-ratio: 1/1) {
             body {
                 height: auto;
                 overflow-y: auto;
@@ -386,9 +386,33 @@
                 order: 3;
                 overflow-y: visible;
                 height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-content: flex-start;
+                gap: 15px;
+            }
+            #side-panel > .panel-title {
+                width: 100%;
+                margin-bottom: 0;
             }
             .board-sections {
                 flex-wrap: wrap;
+            }
+            #player-list {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                flex: 1 1 250px;
+                padding-right: 0 !important;
+                overflow: visible !important;
+            }
+            #game-console {
+                flex: 1 1 250px !important;
+                margin-top: 0 !important;
+                max-height: 600px;
+            }
+            .player-card {
+                margin-bottom: 0;
             }
         }
     </style>
