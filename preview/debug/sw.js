@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-quacks-v19';
+const CACHE_NAME = 'open-quacks-v20';
 
 // List of all files necessary to run the game offline
 const ASSETS_TO_CACHE = [
@@ -39,22 +39,17 @@ self.addEventListener('install', (event) => {
                 console.log('Opened cache, adding assets');
                 return cache.addAll(ASSETS_TO_CACHE);
             })
+            .then(() => self.skipWaiting()) // Force the waiting service worker to become the active service worker
     );
-    // Force the waiting service worker to become the active service worker.
-    self.skipWaiting();
 });
 
 // Activate Event: Clean up old caches if the version name changes
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
+        caches.keys().then(cacheNames => {
             return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
+                cacheNames.filter(name => name !== CACHE_NAME)
+                          .map(name => caches.delete(name))
             );
         })
     );
@@ -62,20 +57,43 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch Event: Serve from cache if available, otherwise go to the network
-self.addEventListener('fetch', (event) => {
+
+// Fetch Event: Serve from cache first, fall back to network, and dynamically cache new things (like other languages)
+self.addEventListener('fetch', event => {
+    // Only intercept requests for our own origin
+    if (!event.request.url.startsWith(self.location.origin)) return;
+
+    // Handle range requests for Safari video playback (explosion.mov / bubbling.mp4)
+    if (event.request.headers.has('range')) {
+        return; 
+    }
+
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Return the cached response if we have it
-                if (response) {
-                    return response;
+        caches.match(event.request).then(cachedResponse => {
+            // 1. Return the cached file if we have it (Offline support)
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+
+            // 2. Otherwise, fetch it from the network
+            return fetch(event.request).then(networkResponse => {
+                // Ensure the response is valid before caching it
+                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                    return networkResponse;
                 }
-                
-                // Otherwise, make the network request
-                return fetch(event.request).catch((error) => {
-                    console.log('Network request failed and no cache available', error);
+
+                // 3. Clone the response and dynamically add it to the cache (e.g., if they pick Spanish, cache es.json)
+                const responseToCache = networkResponse.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, responseToCache);
                 });
-            })
+
+                return networkResponse;
+            }).catch(error => {
+                console.warn('Fetch failed, and asset is not in cache:', event.request.url, error);
+                // Graceful fallback could go here if needed
+            });
+        })
     );
 });
+
