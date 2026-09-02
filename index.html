@@ -155,6 +155,12 @@
             background-color: var(--canvas-bg); border-radius: 8px;
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
             border: 2px dashed #4a4e69;
+            aspect-ratio: 1 / 1;
+            width: 100%;
+            max-height: 100%;
+            min-height: 0;
+            justify-self: center;
+            align-self: center;
         }
         
         canvas { display: block; outline: none; -webkit-tap-highlight-color: transparent; }
@@ -348,15 +354,15 @@
 
         .icon-small { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 5px; }
 
-        /* --- Mobile / Narrow Screen Responsive Layout --- */
-        /* In mobile mode the body itself scrolls (matching upstream).
+        /* --- Mobile / Tablet Portrait Responsive Layout --- */
+        /* In portrait mode the body itself scrolls (matching upstream).
            We tried locking body and scrolling #game-container instead
            for a more "native" feel, but that broke the tutorial flow:
            #tutorial-overlay (pointer-events: auto) catches scroll
            gestures, and iOS Safari can't redirect them through to a
            constrained scrollable child the way it natively scrolls
            the body underneath a fixed overlay. Body-scroll wins. */
-        @media (max-aspect-ratio: 2/3) {
+        @media (max-aspect-ratio: 1/1) {
             body {
                 height: auto;
                 overflow-y: auto;
@@ -380,9 +386,33 @@
                 order: 3;
                 overflow-y: visible;
                 height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-content: flex-start;
+                gap: 15px;
+            }
+            #side-panel > .panel-title {
+                width: 100%;
+                margin-bottom: 0;
             }
             .board-sections {
                 flex-wrap: wrap;
+            }
+            #player-list {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                flex: 1 1 250px;
+                padding-right: 0 !important;
+                overflow: visible !important;
+            }
+            #game-console {
+                flex: 1 1 250px !important;
+                margin-top: 0 !important;
+                max-height: 600px;
+            }
+            .player-card {
+                margin-bottom: 0;
             }
         }
     </style>
@@ -538,6 +568,14 @@
                     <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_sound">Sound Effects</strong>
                 </label>
                 <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_sound_desc">Enable or disable bubbling and explosion audio.</p>
+            </div>
+
+            <div style="margin-top: 10px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="settings-console-checkbox" style="width: 20px; height: 20px; cursor: pointer;">
+                    <strong style="color: var(--accent); font-size: 1rem;" data-i18n="settings_console">Show Event Log</strong>
+                </label>
+                <p style="margin-top: 5px; font-size: 0.85em; color: #aaa;" data-i18n="settings_console_desc">Display a console tracking all game events and AI actions.</p>
             </div>
 
             <div id="install-section" style="margin-top: 15px; text-align: start; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; display: none;">
@@ -799,6 +837,7 @@
                             if (p.isHuman && g.uiManager) {
                                 g.uiManager.queueSackAnimation({ typeId: 'GREEN', value: 1, color: INGREDIENTS.GREEN.color, textCol: INGREDIENTS.GREEN.textCol });
                             }
+                            if(g.uiManager) g.uiManager.addLog(`Fortune: <span style="color:${p.isHuman?'gold':'#ccc'}">[${p.name}]</span> received a Spider token.`);
                         }
                     });
                 }}
@@ -841,11 +880,34 @@
                 },
                 YELLOW: { 
                     description: t('book1_yellow', "If the previous chip was a Boomberry, its white value is cancelled."),
-                    immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); } 
+                    immediate: (p, c) => { 
+                        if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') {
+                            p.currentWhiteValue = Math.max(0, p.currentWhiteValue - p.cauldron[p.cauldron.length-2].value); 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake cancelled the previous Boomberry!`);
+                        }
+                    } 
                 },
                 BLUE: { 
                     description: t('book1_blue', "Draw 1 extra chip. If ingredient, place it for free! If Boomberry, return to bag."),
-                    immediate: (p, c) => { if(p.bag.length > 0) { const idx = Math.floor(Math.random() * p.bag.length); const next = p.bag[idx]; if(next.type.id !== 'WHITE') { p.bag.splice(idx, 1); const np = p.currentBrewValue + next.value; p.cauldron.push({ ...next, spaceIndex: np, drawnAt: Date.now() }); p.currentBrewValue = np; } } } 
+                    immediate: (p, c) => { 
+                        if(p.bag.length > 0) { 
+                            const idx = Math.floor(Math.random() * p.bag.length); 
+                            const next = p.bag[idx]; 
+                            if(next.type.id !== 'WHITE') { 
+                                p.bag.splice(idx, 1); 
+                                const np = p.currentBrewValue + next.value; 
+                                const placedChip = { ...next, spaceIndex: np, drawnAt: Date.now() };
+                                p.cauldron.push(placedChip); 
+                                p.currentBrewValue = np; 
+                                if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a free <strong style="color:${next.type.color}">${next.type.name} ${next.value}</strong>!`);
+                                
+                                const nextBook = p.game.books[placedChip.type.id];
+                                if (nextBook && nextBook.immediate) nextBook.immediate(p, placedChip);
+                            } else {
+                                if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Ghost pulled a Boomberry, left it in the bag.`);
+                            }
+                        } 
+                    } 
                 },
                 GREEN: { 
                     description: t('book1_green', "End of Round: Gain 1 Ruby if your last or second-to-last placed chip is a Spider."),
@@ -901,7 +963,12 @@
                 },
                 YELLOW: { 
                     description: t('book2_yellow', "If the previous chip was a Boomberry, gain 1 Ruby immediately."),
-                    immediate: (p, c) => { if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') p.rubies += 1; } 
+                    immediate: (p, c) => { 
+                        if(p.cauldron.length >= 2 && p.cauldron[p.cauldron.length-2].type.id === 'WHITE') {
+                            p.rubies += 1; 
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake found a Ruby next to a Boomberry.`);
+                        }
+                    } 
                 },
                 BLUE: { 
                     description: t('book2_blue', "End of Round: Gain 1 VP for every Blue chip in your cauldron."),
@@ -977,6 +1044,7 @@
                         const count = p.cauldron.filter(ch => ch.type.id === 'YELLOW').length;
                         if (count === 1 || count === 3) {
                             p.explosionLimitOffset = (p.explosionLimitOffset || 0) + 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake increased their explosion limit by 1!`);
                         }
                     } 
                 },
@@ -1019,7 +1087,6 @@
                             await p.game.uiManager.showGhostUpgradeModal(upgradeableChips);
                         } else {
                             // AI behavior: Automatically upgrade the chip that gives the biggest mathematical jump
-                            // AI should NEVER upgrade boomberries!
                             const safeChips = upgradeableChips.filter(item => item.chip.type.id !== 'WHITE');
                             if (safeChips.length === 0) return;
 
@@ -1031,9 +1098,9 @@
                             }
                             
                             const invIndex = p.inventory.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
-                            if (invIndex !== -1) p.inventory[invIndex].value = target.toVal;
+                            if (invIndex !== -1) p.inventory[invIndex] = { type: target.chip.type, value: target.toVal };
                             const bagIndex = p.bag.findIndex(i => i.type.id === target.chip.type.id && i.value === target.chip.value);
-                            if (bagIndex !== -1) p.bag[bagIndex].value = target.toVal;
+                            if (bagIndex !== -1) p.bag[bagIndex] = { type: target.chip.type, value: target.toVal };
                         }
                     } 
                 },
@@ -1076,7 +1143,10 @@
                     description: t('book3_black', "Immediately gain 1 Ruby if placed on a Ruby space."),
                     immediate: (p, c) => { 
                         const spaceInfo = TRACK_REWARDS[Math.min(c.spaceIndex, TRACK_REWARDS.length - 1)];
-                        if (spaceInfo && spaceInfo.ruby) p.rubies++;
+                        if (spaceInfo && spaceInfo.ruby) {
+                            p.rubies++;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Crow Skull landed on a Ruby space and gained 1 Ruby!`);
+                        }
                     } 
                 }
             };
@@ -1485,6 +1555,7 @@
 
                 if (!isTutorial) {
                     this.currentFortuneCard = FORTUNE_CARDS[Math.floor(Math.random() * FORTUNE_CARDS.length)];
+                    if (this.uiManager) this.uiManager.addLog(`🎴 Fortune Card: "${this.currentFortuneCard.text}"`);
                     if (this.currentFortuneCard.type === 'immediate') this.currentFortuneCard.apply(this);
                 } else {
                     this.currentFortuneCard = null;
@@ -1493,6 +1564,11 @@
                 const maxVp = Math.max(...this.players.map(p => p.victoryPoints));
                 this.players.forEach(p => {
                     p.ratTails = p.victoryPoints === maxVp ? 0 : VP_RAT_SPACES.filter(s => s > p.victoryPoints && s <= maxVp).length;
+                    
+                    if (p.ratTails > 0 && this.uiManager) {
+                        this.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received ${p.ratTails} Rat Tails.`);
+                    }
+
                     p.prepareForNewRound();
                     
                     if (p.isHuman && p.ratTails >= 20 && this.uiManager) {
@@ -1722,11 +1798,16 @@
 
             endRound() {
                 if (this.round === 9) {
+                    if (this.uiManager) this.uiManager.addLog(`<div style="margin-top: 15px; padding-bottom: 2px; border-bottom: 1px solid #4a4e69; color: var(--accent); font-weight: bold; text-transform: uppercase;">Final Scoring</div>`);
                     this.players.forEach(p => { 
                         p.finalMoney = p.money;
                         p.finalRubies = p.rubies;
                         p.convertedVP = Math.floor(p.money / 5) + Math.floor(p.rubies / 2);
                         p.victoryPoints += p.convertedVP; 
+                        
+                        if (this.uiManager) {
+                            this.uiManager.addLog(`End of Game: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> converted ${p.money} Money and ${p.rubies} Rubies into ${p.convertedVP} VP. Final score: ${p.victoryPoints} VP.`);
+                        }
                     });
                     if (this.uiManager) { 
                         this.uiManager.sortPlayers(); 
@@ -1767,11 +1848,12 @@
                 this.displayPlayers = []; // Cached sorting order
                 
                 this.isDebug = window.location.href.includes('debug=1');
+                this.showEventLog = getCookie('showEventLog') === '1'; // Default is disabled
                 this.unlockedAchievements = JSON.parse(getCookie('quacks_achievements') || '{}');
 
-                if (this.isDebug) {
-                    const consoleEl = document.getElementById('game-console');
-                    if (consoleEl) consoleEl.style.display = 'flex';
+                const consoleEl = document.getElementById('game-console');
+                if (consoleEl) {
+                    consoleEl.style.display = this.showEventLog ? 'flex' : 'none';
                 }
 
                 if (Object.keys(this.unlockedAchievements).length > 0) {
@@ -2122,6 +2204,11 @@
                 const wasExploded = this.game.humanPlayer.exploded;
                 this.game.humanPlayer.drawChip(); 
 
+                if (!wasExploded && !this.game.humanPlayer.exploded && this.game.humanPlayer.hasStopped) {
+                    const rewards = this.getProjectedRewards(this.game.humanPlayer);
+                    this.addLog(`<span style="color:gold">[${this.game.humanPlayer.name}]</span> bag empty, sold potion for ${rewards.vp} VP and ${rewards.money} Money.`);
+                }
+
                 if (this.tutorialStep === 1 && this.game.humanPlayer.cauldron.length === 1) {
                     this.tutorialStep = 1.5;
                     this.updateTutorialUI();
@@ -2469,6 +2556,7 @@
                         this.unlockAchievement('META_CHARLATAN');
                         document.getElementById('debug-draw-modal').style.display = 'none';
                         p.victoryPoints = 0; // Penalty for picking token
+                        this.addLog(`🛠️ <span style="color:gold">[${p.name}]</span> used a cheat to place <strong style="color:${item.type.color}">${item.type.name} ${item.value}</strong> (VP penalized to 0)`);
                         
                         const wasExploded = p.exploded;
                         p.drawChip(index);
@@ -2590,10 +2678,10 @@
                         elWrapper.onclick = () => {
                             // Apply the upgrade to the player's permanent bag
                             const invIndex = h.inventory.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
-                            if (invIndex !== -1) h.inventory[invIndex].value = toVal;
+                            if (invIndex !== -1) h.inventory[invIndex] = { type: chip.type, value: toVal };
                             
                             const bagIndex = h.bag.findIndex(i => i.type.id === chip.type.id && i.value === chip.value);
-                            if (bagIndex !== -1) h.bag[bagIndex].value = toVal;
+                            if (bagIndex !== -1) h.bag[bagIndex] = { type: chip.type, value: toVal };
                             
                             this.addLog(`<span style="color:gold">[${h.name}]</span> upgraded <strong style="color:${chip.type.color}">${chip.type.name} ${chip.value}</strong> to <strong style="color:${chip.type.color}">${chip.type.name} ${toVal}</strong>`);
                             document.getElementById('ghost-upgrade-modal').style.display = 'none';
@@ -2605,6 +2693,7 @@
                     const skipBtn = document.getElementById('btn-skip-ghost-upgrade');
                     if (skipBtn) {
                         skipBtn.onclick = () => {
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> skipped their Ghostly Exchange.`);
                             document.getElementById('ghost-upgrade-modal').style.display = 'none';
                             resolve(false); // User chose not to upgrade anything
                         };
@@ -2920,6 +3009,19 @@
                     };
                 }
 
+                // Event Log Setting
+                const consoleCheckbox = document.getElementById('settings-console-checkbox');
+                if (consoleCheckbox) {
+                    consoleCheckbox.checked = this.showEventLog;
+                    consoleCheckbox.onchange = (e) => {
+                        const val = e.target.checked;
+                        setCookie('showEventLog', val ? '1' : '0', 365);
+                        this.showEventLog = val;
+                        const consoleEl = document.getElementById('game-console');
+                        if (consoleEl) consoleEl.style.display = val ? 'flex' : 'none';
+                    };
+                }
+
                 const modal = document.getElementById('settings-modal');
                 if (modal) modal.style.display = 'flex';
             }
@@ -3162,7 +3264,7 @@
                         if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
                             p.specialPowerActive = true;
-                            if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Bard's Charm.`);
+                            this.addLog(`<span style="color:#ccc">[${p.name}]</span> used Bard's Charm.`);
                             p.rubies += 3;
                         }
 
@@ -3172,7 +3274,7 @@
                             if (this.game.round >= 8 || p.money >= 20) {
                                 p.specialPowerUsed = true;
                                 p.specialPowerActive = true;
-                                if (this.uiManager) this.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> used Royal Decree.`);
+                                this.addLog(`<span style="color:#ccc">[${p.name}]</span> used Royal Decree.`);
                                 p.money *= 2;
                             }
                         }
@@ -3184,7 +3286,7 @@
                         while (p.rubies >= dropCost) {
                             p.rubies -= dropCost;
                             p.dropletPosition++;
-                            if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
+                            this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought Droplet Upgrade for ${dropCost} Rubies.`);
                         }
 
                         let boughtColors = [];
@@ -3205,7 +3307,7 @@
                                 const buy = available[0];
                                 p.buyChip(buy.type, buy.value, buy.cost);
                                 boughtColors.push(buy.type.id);
-                                if (this) this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought <strong style="color:${buy.type.color}">${buy.type.name} ${buy.value}</strong> for ${buy.cost} Money.`);
+                                this.addLog(`<span style="color:#ccc">[${p.name}]</span> bought <strong style="color:${buy.type.color}">${buy.type.name} ${buy.value}</strong> for ${buy.cost} Money.`);
                             } else {
                                 break; // Break out if no affordable items are left
                             }
@@ -3411,12 +3513,16 @@
                 
                 // Dynamically resize overlay buttons relative to the canvas
                 const baseSize = Math.min(this.canvas.width, this.canvas.height);
+                const offsetX = (this.canvas.width - baseSize) / 2;
+                const offsetY = (this.canvas.height - baseSize) / 2;
                 const btnSize = baseSize * 0.15;
                 
                 const toggleBtn = document.getElementById('btn-toggle-values');
                 if (toggleBtn) {
                     toggleBtn.style.width = `${btnSize}px`;
                     toggleBtn.style.height = `${btnSize}px`;
+                    toggleBtn.style.top = `${offsetY + 10}px`;
+                    toggleBtn.style.left = `${offsetX + 10}px`;
                 }
                 
                 const monocleIcon = document.getElementById('ui-monocle-icon');
@@ -3430,11 +3536,14 @@
                     sellBtn.style.width = `${btnSize}px`;
                     sellBtn.style.height = `${btnSize}px`;
                     sellBtn.style.fontSize = `${btnSize * 0.5}px`;
+                    sellBtn.style.bottom = `${offsetY + 10}px`;
+                    sellBtn.style.left = `${offsetX + 10}px`;
                 }
 
                 const liveBrew = document.getElementById('ui-live-brew-value');
                 if (liveBrew) {
-                    liveBrew.style.bottom = `${10 + btnSize + 10}px`; // Place it exactly 10px above the dynamically sized sell button
+                    liveBrew.style.bottom = `${offsetY + 10 + btnSize + 10}px`; // Place it exactly 10px above the dynamically sized sell button
+                    liveBrew.style.left = `${offsetX + 10}px`;
                     liveBrew.style.fontSize = `${btnSize * 0.25}px`;
                 }
 
@@ -3443,6 +3552,8 @@
                     meter.style.width = `${baseSize * 0.3}px`;
                     meter.style.height = `${btnSize * 0.45}px`; // Scaled relative to the corner buttons
                     meter.style.borderRadius = `${btnSize * 0.25}px`;
+                    meter.style.top = `${offsetY + 10}px`;
+                    meter.style.right = `${offsetX + 10}px`;
                 }
                 const meterText = document.getElementById('ui-boomberry-text');
                 if (meterText) {
@@ -3453,6 +3564,8 @@
                 if (sack) {
                     sack.style.width = `${btnSize}px`;
                     sack.style.height = `${btnSize}px`;
+                    sack.style.bottom = `${offsetY + 10}px`;
+                    sack.style.right = `${offsetX + 10}px`;
                 }
                 const bagCount = document.getElementById('ui-bag-count');
                 if (bagCount) {
@@ -3727,9 +3840,11 @@
                     }
 
                     // NEW: Draw Sack Animations
+                    const offsetX = (w - baseSize) / 2;
+                    const offsetY = (h - baseSize) / 2;
                     const sackSize = baseSize * 0.15;
-                    const sackX = w - sackSize - 10; // Corresponds exactly to CSS right: 10px
-                    const sackY = h - sackSize - 10; // Corresponds exactly to CSS bottom: 10px
+                    const sackX = w - offsetX - sackSize - 10; // Corresponds exactly to CSS right: offsetX + 10px
+                    const sackY = h - offsetY - sackSize - 10; // Corresponds exactly to CSS bottom: offsetY + 10px
                     
                     const now = Date.now();
                     this.sackAnimations = this.sackAnimations.filter(anim => {
