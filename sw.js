@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-quacks-v20';
+const CACHE_NAME = 'open-quacks-v21';
 
 // List of all files necessary to run the game offline
 const ASSETS_TO_CACHE = [
@@ -92,7 +92,7 @@ self.addEventListener('install', (event) => {
 // Activate Event: Clean up old caches and claim clients immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
+        caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
                     if (cacheName !== CACHE_NAME) {
@@ -146,3 +146,4 @@ self.addEventListener('fetch', (event) => {
         })
     );
 });
+
