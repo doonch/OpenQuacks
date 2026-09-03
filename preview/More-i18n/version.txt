@@ -1,4 +1,4 @@
 preview_for: More-i18n
-commit:      eb13756613a569da285de6cecab75add3e9f3c0c
+commit:      1f29a4d1de4f923520fff6b3997439569f812e46
 
-deployed_at: 2026-09-02T23:06:26Z
+deployed_at: 2026-09-03T00:43:15Z

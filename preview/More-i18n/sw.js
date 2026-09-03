@@ -28,7 +28,11 @@ const ASSETS_TO_CACHE = [
     './lang/el.json',
     './lang/ga.json',
     './lang/ja.json',
-    './lang/pt.json'
+    './lang/pt.json',
+    './lang/zh.json',
+    './lang/hi.json',
+    './lang/am.json',
+    './lang/tr.json'
 ];
 
 // Helper to handle Range Requests for cached audio/video on iOS Safari and Chromium
