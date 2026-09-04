@@ -3049,8 +3049,10 @@
             showBookModal() {
                 const listEl = document.getElementById('book-rules-list');
                 listEl.innerHTML = '';
+                const isDebug = this.isDebug || window.location.href.includes('debug=1');
                 
                 Object.keys(this.game.books).forEach(colorId => {
+                    if (colorId === 'BROWN' && !isDebug) return;
                     const ingDef = INGREDIENTS[colorId];
                     const bookDef = this.game.books[colorId];
                     
