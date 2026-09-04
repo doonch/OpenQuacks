@@ -216,5 +216,8 @@
   "ui_phase_prefix": "阶段：",
   "ui_you": "你",
   "ui_you_win": "🏆 你获胜了！ 🏆",
-  "vp": "分"
+  "vp": "分",
+  "char_engineer": "工程师",
+  "shop_desc_engineer": "无限制购买所有代币——无限次购买，同色可多次购买！",
+  "book_brown": "特殊虫子配料。精准向前爬行。"
 }
