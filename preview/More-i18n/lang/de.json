@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Phase:",
   "ui_you": "Du",
   "ui_you_win": "🏆 Gewonnen! 🏆",
-  "vp": "Siegpunkte"
+  "vp": "Siegpunkte",
+  "char_engineer": "Der Ingenieur",
+  "shop_desc_engineer": "Kaufe alle Chips ohne Einschränkungen – unbegrenzte Käufe und mehrere derselben Farbe!",
+  "book_brown": "Spezielle Käfer-Zutat. Krabbelt mit Präzision vorwärts."
 }

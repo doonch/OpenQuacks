@@ -522,7 +522,7 @@
     </div>
 
     <div id="char-select-modal" class="modal-overlay" style="z-index: 1009;">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 440px;">
             <h2 data-i18n="modal_char_select_title">🎭 Select Your Character</h2>
             <p style="margin-bottom: 10px; font-size: 0.8em; color: #aaa; text-align: start;" data-i18n="modal_char_select_desc">Choose your avatar for this game.</p>
             <div id="char-select-grid" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
@@ -869,6 +869,7 @@
                     }
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                BROWN: { description: t('book_brown', "Special bug ingredient. Crawls ahead with precision.") },
                 RED: { 
                     description: t('book1_red', "If there is at least 1 Pumpkin in your cauldron, move 1 extra space."),
                     immediate: (p, c) => { 
@@ -953,6 +954,7 @@
                     }
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                BROWN: { description: t('book_brown', "Special bug ingredient. Crawls ahead with precision.") },
                 RED: { 
                     description: t('book2_red', "If there are 1 or 2 Pumpkins in your cauldron, move 1 extra space. If 3+, move 2 extra spaces."),
                     immediate: (p, c) => { 
@@ -1028,6 +1030,7 @@
                     }
                 },
                 WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                BROWN: { description: t('book_brown', "Special bug ingredient. Crawls ahead with precision.") },
                 RED: { 
                     description: t('book3_red', "Add the value of the immediately preceding Boomberry to this Toadstool's movement."),
                     immediate: (p, c) => { 
@@ -1162,7 +1165,8 @@
 
             CHARACTER_POWERS = {
                 WITCH: {}, WIZARD: {}, MONK: {}, CHILD: {},
-                PRINCESS: {}, VOODOO_LADY: {}, BARD: {}, GARDENER: {}
+                PRINCESS: {}, VOODOO_LADY: {}, BARD: {}, GARDENER: {},
+                ENGINEER: {}
             };
 
             ACHIEVEMENTS_DEF = {
@@ -1335,6 +1339,7 @@
         }
         
         function getCharacterSpriteStyle(charName, moodName) {
+            if (charName === 'ENGINEER') return '';
             const row = CHAR_ROW[charName] || 0;
             const col = MOOD_COL[moodName] || 0;
             // For an 8x4 grid, the background size is 400% (cols) by 800% (rows)
@@ -1354,7 +1359,8 @@
         function getCharacterFallbackEmoji(charName) {
             const CHAR_EMOJIS = {
                 'WIZARD': '🧙‍♂️', 'WITCH': '🧙‍♀️', 'MONK': '👨🏼‍🦲', 'CHILD': '🧒',
-                'PRINCESS': '👸', 'VOODOO_LADY': '🧟‍♀️', 'BARD': '🪕', 'GARDENER': '🧑‍🌾'
+                'PRINCESS': '👸', 'VOODOO_LADY': '🧟‍♀️', 'BARD': '🪕', 'GARDENER': '🧑‍🌾',
+                'ENGINEER': '👷'
             };
             return CHAR_EMOJIS[charName] || '👤';
         }
@@ -2901,13 +2907,27 @@
                 const grid = document.getElementById('char-select-grid');
                 grid.innerHTML = '';
                 const chars = ['WITCH', 'WIZARD', 'MONK', 'CHILD', 'PRINCESS', 'VOODOO_LADY', 'BARD', 'GARDENER'];
+                const isDebug = this.isDebug || window.location.href.includes('debug=1');
+                if (isDebug) {
+                    chars.push('ENGINEER');
+                }
                 
                 chars.forEach(charName => {
                     const btn = document.createElement('div');
                     const isCurrent = (!isMandatory && this.game.humanPlayer && this.game.humanPlayer.character === charName);
                     
-                    btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(0,0,0,0.5); transition: border-color 0.2s; display: flex; align-items: center; justify-content: center; font-size: 3rem; ${getCharacterSpriteStyle(charName, 'SMIRK')}`;
-                    btn.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(charName);
+                    if (charName === 'ENGINEER') {
+                        btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(255,215,0,0.15); transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(255,215,0,0.2);`;
+                        btn.innerHTML = `
+                            <span style="font-size: 2.5rem; line-height: 1;">👷</span>
+                            <span style="font-size: 0.65rem; color: gold; font-weight: bold; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Engineer</span>
+                        `;
+                    } else {
+                        btn.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 3px solid ${isCurrent ? 'gold' : 'transparent'}; cursor: pointer; background-color: rgba(0,0,0,0.5); transition: border-color 0.2s; display: flex; align-items: center; justify-content: center; font-size: 3rem; ${getCharacterSpriteStyle(charName, 'SMIRK')}`;
+                        btn.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(charName);
+                    }
+                    const fallbackName = charName.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join(' ');
+                    btn.title = t('char_' + charName.toLowerCase(), fallbackName);
                     
                     btn.addEventListener('click', () => {
                         setCookie('selectedCharacter', charName, 365);
@@ -3029,8 +3049,10 @@
             showBookModal() {
                 const listEl = document.getElementById('book-rules-list');
                 listEl.innerHTML = '';
+                const isDebug = this.isDebug || window.location.href.includes('debug=1');
                 
                 Object.keys(this.game.books).forEach(colorId => {
+                    if (colorId === 'BROWN' && !isDebug) return;
                     const ingDef = INGREDIENTS[colorId];
                     const bookDef = this.game.books[colorId];
                     
@@ -3196,7 +3218,7 @@
                     const isWinner = (i === 0);
                     const faceMood = getPlayerMood(p, true, isWinner);
                     const faceStyle = getCharacterSpriteStyle(p.character, faceMood);
-                    const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(p.character);
+                    const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0 && p.character !== 'ENGINEER') ? '' : getCharacterFallbackEmoji(p.character);
                     
                     // Extract the converted amounts
                     const moneyVP = Math.floor(p.money / 5);
@@ -3257,9 +3279,21 @@
                 if (this.game.round === 9) { this.game.endRound(); return; }
                 this.shopCart = [];
                 this.game.humanPlayer.moneySpentThisRound = 0;
+
+                // Engineer bonus: 100 gold and 50 rubies upon entering the shopping phase
+                if (this.game.humanPlayer.character === 'ENGINEER') {
+                    this.game.humanPlayer.money += 100;
+                    this.game.humanPlayer.rubies += 50;
+                    this.addLog(`🛠️ <span style="color:gold">[${this.game.humanPlayer.name}]</span> received 100 Gold and 50 Rubies!`);
+                }
                 
                 this.game.players.forEach(p => {
                     if (!p.isHuman) { 
+                        if (p.character === 'ENGINEER') {
+                            p.money += 100;
+                            p.rubies += 50;
+                        }
+
                         // AI Bard Power Logic
                         if (this.game.config.useCharacterPowers && p.character === 'BARD' && !p.specialPowerUsed) {
                             p.specialPowerUsed = true;
@@ -3290,15 +3324,29 @@
                         }
 
                         let boughtColors = [];
-                        const maxBuys = (p.character === 'PRINCESS' && p.specialPowerActive) ? 3 : 2;
+                        const isAIEngineer = (p.character === 'ENGINEER');
+                        const maxBuys = isAIEngineer ? 99 : ((p.character === 'PRINCESS' && p.specialPowerActive) ? 3 : 2);
                         
-                        // AI can buy up to 2 chips (or 3 for Princess)
+                        // AI can buy up to 2 chips (or 3 for Princess, unlimited for Engineer)
                         for (let i = 0; i < maxBuys; i++) {
+                            const catalog = isAIEngineer ? [
+                                ...SHOP_CATALOG,
+                                { type: INGREDIENTS.BROWN, value: 0, cost: 2 },
+                                { type: INGREDIENTS.BROWN, value: 1, cost: 4 },
+                                { type: INGREDIENTS.BROWN, value: 2, cost: 8 },
+                                { type: INGREDIENTS.WHITE, value: 1, cost: 3 },
+                                { type: INGREDIENTS.WHITE, value: 2, cost: 6 },
+                                { type: INGREDIENTS.WHITE, value: 3, cost: 9 }
+                            ] : SHOP_CATALOG;
+
                             // Find all available ingredients that the AI can afford, hasn't bought the color of yet, and are unlocked this round
-                            const available = SHOP_CATALOG.filter(item => {
-                                if (item.type.id === 'YELLOW' && this.game.round <= 2) return false;
-                                if (item.type.id === 'BLUE' && this.game.round <= 3) return false;
-                                return item.cost <= p.money && !boughtColors.includes(item.type.id);
+                            const available = catalog.filter(item => {
+                                if (!isAIEngineer) {
+                                    if (item.type.id === 'YELLOW' && this.game.round <= 2) return false;
+                                    if (item.type.id === 'BLUE' && this.game.round <= 3) return false;
+                                    if (boughtColors.includes(item.type.id)) return false;
+                                }
+                                return item.cost <= p.money;
                             });
                             
                             if (available.length > 0) {
@@ -3323,6 +3371,7 @@
 
             renderShopUI() {
                 const h = this.game.humanPlayer;
+                const isEngineer = (h.character === 'ENGINEER');
                 document.getElementById('shop-money').innerText = h.money; 
                 document.getElementById('shop-rubies').innerText = h.rubies;
                 document.getElementById('shop-money-icon').style.cssText = `width: 24px; height: 24px; display: inline-block; margin-left: 5px; ${getUtilSpriteStyle('COIN')}`;
@@ -3338,16 +3387,34 @@
                 
                 const shopDescEl = document.getElementById('shop-desc-text');
                 if (shopDescEl) {
-                    shopDescEl.innerText = (h.character === 'PRINCESS' && h.specialPowerActive) ? 
-                        t('shop_desc_princess', 'Buy up to 3 ingredients of different colors. Ruby items have no limits!') : 
-                        t('shop_desc', 'Buy up to 2 ingredients of different colors. Ruby items have no limits!');
+                    if (isEngineer) {
+                        shopDescEl.innerText = t('shop_desc_engineer', 'Buy all tokens with no limitations — unlimited purchases, and multiple of any color!');
+                    } else if (h.character === 'PRINCESS' && h.specialPowerActive) {
+                        shopDescEl.innerText = t('shop_desc_princess', 'Buy up to 3 ingredients of different colors. Ruby items have no limits!');
+                    } else {
+                        shopDescEl.innerText = t('shop_desc', 'Buy up to 2 ingredients of different colors. Ruby items have no limits!');
+                    }
                 }
                 
-                SHOP_CATALOG.forEach(item => {
-                    if ((item.type.id === 'YELLOW' && this.game.round <= 2) || (item.type.id === 'BLUE' && this.game.round <= 3)) return;
+                const catalog = isEngineer ? [
+                    ...SHOP_CATALOG,
+                    { type: INGREDIENTS.BROWN, value: 0, cost: 2 },
+                    { type: INGREDIENTS.BROWN, value: 1, cost: 4 },
+                    { type: INGREDIENTS.BROWN, value: 2, cost: 8 },
+                    { type: INGREDIENTS.WHITE, value: 1, cost: 3 },
+                    { type: INGREDIENTS.WHITE, value: 2, cost: 6 },
+                    { type: INGREDIENTS.WHITE, value: 3, cost: 9 }
+                ] : SHOP_CATALOG;
+
+                catalog.forEach(item => {
+                    if (!isEngineer) {
+                        if ((item.type.id === 'YELLOW' && this.game.round <= 2) || (item.type.id === 'BLUE' && this.game.round <= 3)) return;
+                    }
                     
                     const el = document.createElement('div');
-                    const disabled = h.money < item.cost || this.shopCart.length >= maxBuys || cartColors.includes(item.type.id);
+                    const disabled = isEngineer
+                        ? h.money < item.cost
+                        : (h.money < item.cost || this.shopCart.length >= maxBuys || cartColors.includes(item.type.id));
                     el.className = `shop-item ${disabled ? 'disabled' : ''}`;
                     
                     const chipStyle = getChipSpriteStyle(item.type.id, item.value);
@@ -3355,6 +3422,7 @@
                     const book = this.game.books[item.type.id];
                     let desc = book ? book.description : "";
                     if (item.type.id === 'ORANGE') desc = t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect.");
+                    if (item.type.id === 'BROWN') desc = t('book_brown', "Special bug ingredient. Crawls ahead with precision.");
                     
                     el.innerHTML = `<div class="chip-icon" style="${chipStyle || `background-color: ${item.type.color};`}">${!chipStyle ? item.value : ''}</div>
                                     <div style="font-size: 0.8em; font-weight: bold;">${item.type.name}</div>
@@ -4014,7 +4082,7 @@
                 const humanFaceEl = document.getElementById('ui-human-face');
                 if (humanFaceEl) {
                     humanFaceEl.style.cssText = `width: 70px; height: 90px; border-radius: 8px; border: 2px solid var(--panel-border); background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 3rem; ${getCharacterSpriteStyle(human.character, humanMood)}`;
-                    humanFaceEl.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(human.character);
+                    humanFaceEl.innerHTML = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0 && human.character !== 'ENGINEER') ? '' : getCharacterFallbackEmoji(human.character);
                 }
 
                 const phaseEl = document.getElementById('ui-phase');
@@ -4263,7 +4331,7 @@
 
                         const pMood = getPlayerMood(player);
                         const pFaceStyle = getCharacterSpriteStyle(player.character, pMood);
-                        const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0) ? '' : getCharacterFallbackEmoji(player.character);
+                        const emojiStr = (window.GAME_ASSETS && window.GAME_ASSETS.CHARACTERS && window.GAME_ASSETS.CHARACTERS.naturalWidth > 0 && player.character !== 'ENGINEER') ? '' : getCharacterFallbackEmoji(player.character);
                         
                         const isRTL = document.documentElement.dir === 'rtl';
                         let brewHtml = `<div style="margin: 4px 0;">
@@ -4434,7 +4502,11 @@
             const gameController = new GameController(gameConfig);
             const uiManager = new QuacksUIManager(gameController, window.GAME_ASSETS);
             
-            const savedChar = getCookie('selectedCharacter');
+            const isDebug = window.location.href.includes('debug=1');
+            let savedChar = getCookie('selectedCharacter');
+            if (savedChar === 'ENGINEER' && !isDebug) {
+                savedChar = null;
+            }
             
             if (!savedChar) {
                 // Mandatory selection - pauses game start until user picks
@@ -4543,9 +4615,13 @@
                 navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        registration.update();
                     }, (err) => {
                         console.log('ServiceWorker registration failed: ', err);
                     });
+            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         }
 
