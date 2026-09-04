@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Aşama:",
   "ui_you": "Sen",
   "ui_you_win": "🏆 Kazandın! 🏆",
-  "vp": "ZP"
+  "vp": "ZP",
+  "char_engineer": "Mühendis",
+  "shop_desc_engineer": "Tüm jetonları sınırsız satın alın - sınırsız satın alma ve aynı renkten birden fazla!",
+  "book_brown": "Özel böcek malzemesi. Hassasiyetle ilerler."
 }

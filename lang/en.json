@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Phase:",
   "ui_you": "You",
   "ui_you_win": "🏆 You win! 🏆",
-  "vp": "VP"
+  "vp": "VP",
+  "char_engineer": "The Engineer",
+  "shop_desc_engineer": "Buy all tokens with no limitations — unlimited purchases, and multiple of any color!",
+  "book_brown": "Special bug ingredient. Crawls ahead with precision."
 }

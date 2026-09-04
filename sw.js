@@ -1,4 +1,4 @@
-const CACHE_NAME = 'open-quacks-v23';
+const CACHE_NAME = 'open-quacks-v27';
 
 // List of all files necessary to run the game offline
 const ASSETS_TO_CACHE = [
@@ -114,16 +114,27 @@ self.addEventListener('fetch', (event) => {
     const request = event.request;
     const isRangeRequest = request.headers.has('range');
 
-    // Handle HTML Navigation requests (support ?source=pwa, ?lang=..., ?help=1 offline)
+    // Handle HTML Navigation requests: Network-First to ensure fresh game code, with offline cache fallback
     if (request.mode === 'navigate') {
         event.respondWith(
-            caches.match(request, { ignoreSearch: true }).then((cached) => {
-                if (cached) return cached;
-                return caches.match('./index.html').then((fallback) => {
-                    if (fallback) return fallback;
-                    return fetch(request);
-                });
-            }).catch(() => caches.match('./index.html'))
+            fetch(request)
+                .then(async (networkResponse) => {
+                    if (networkResponse && networkResponse.status === 200) {
+                        try {
+                            const copy = networkResponse.clone();
+                            const cache = await caches.open(CACHE_NAME);
+                            await cache.put('./index.html', copy);
+                        } catch (e) {
+                            // ignore cache put errors
+                        }
+                    }
+                    return networkResponse;
+                })
+                .catch(async () => {
+                    const cached = await caches.match(request, { ignoreSearch: true });
+                    if (cached) return cached;
+                    return caches.match('./index.html');
+                })
         );
         return;
     }
