@@ -4615,13 +4615,9 @@
                 navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        registration.update();
                     }, (err) => {
                         console.log('ServiceWorker registration failed: ', err);
                     });
-            });
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
             });
         }
 
