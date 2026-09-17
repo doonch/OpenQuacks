@@ -1,4 +1,4 @@
-version: v1.3.0
-commit:  a867acbbc4abde97954b33110eb976bb68304ac9
+version: v1.4.0
+commit:  eb13756613a569da285de6cecab75add3e9f3c0c
 
-deployed_at: 2026-09-02T13:42:49Z
+deployed_at: 2026-09-17T21:29:17Z
