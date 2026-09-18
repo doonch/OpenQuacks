@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Faza:",
   "ui_you": "Ty",
   "ui_you_win": "🏆 Wygrałeś! 🏆",
-  "vp": "PZ"
+  "vp": "PZ",
+  "char_engineer": "Inżynier",
+  "shop_desc_engineer": "Kupuj wszystkie żetony bez ograniczeń – nielimitowane zakupy i wiele w tym samym kolorze!",
+  "book_brown": "Specjalny składnik robaka. Precyzyjnie posuwa się do przodu."
 }

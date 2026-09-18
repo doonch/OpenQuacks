@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Fase:",
   "ui_you": "Tú",
   "ui_you_win": "🏆 ¡Ganaste! 🏆",
-  "vp": "PV"
+  "vp": "PV",
+  "char_engineer": "El Ingeniero",
+  "shop_desc_engineer": "¡Compra todas las fichas sin limitaciones: compras ilimitadas y múltiples del mismo color!",
+  "book_brown": "Ingrediente especial de escarabajo. Avanza con precisión."
 }

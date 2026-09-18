@@ -216,5 +216,8 @@
   "ui_phase_prefix": "Fase:",
   "ui_you": "Você",
   "ui_you_win": "🏆 Você venceu! 🏆",
-  "vp": "PV"
+  "vp": "PV",
+  "char_engineer": "O Engenheiro",
+  "shop_desc_engineer": "Compre todas as fichas sem limitações — compras ilimitadas e várias da mesma cor!",
+  "book_brown": "Ingrediente especial de besouro. Avança com precisão."
 }

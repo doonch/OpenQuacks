@@ -217,5 +217,8 @@
   "ui_phase_prefix": "Céim:",
   "ui_you": "Tú féin",
   "ui_you_win": "🏆 Bhuaigh tú! 🏆",
-  "vp": "PB"
+  "vp": "PB",
+  "char_engineer": "An tInnealtóir",
+  "shop_desc_engineer": "Ceannaigh gach comhartha gan teorainn - ceannacháin neamhtheoranta, agus níos mó ná ceann amháin den dath céanna!",
+  "book_brown": "Comhábhar speisialta feithidí. Bogann sé ar aghaidh go beacht."
 }
