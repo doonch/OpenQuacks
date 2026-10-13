@@ -1,4 +1,4 @@
 preview_for: rule-set-4
-commit:      b7ac66cf22ce3e61964bb4201886525248db97de
+commit:      1c4449275d4b3b3ea2069713010ee25184d1c437
 
-deployed_at: 2026-10-13T13:12:57Z
+deployed_at: 2026-10-13T15:02:34Z
