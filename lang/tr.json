@@ -219,5 +219,19 @@
   "vp": "ZP",
   "char_engineer": "Mühendis",
   "shop_desc_engineer": "Tüm jetonları sınırsız satın alın - sınırsız satın alma ve aynı renkten birden fazla!",
-  "book_brown": "Özel böcek malzemesi. Hassasiyetle ilerler."
+  "book_brown": "Özel böcek malzemesi. Hassasiyetle ilerler.",
+  "book4_black": "Tur Sonu: En çok karga kafatası = +1 damla adımı ve +1 ZP. 1.lik beraberliği = +1 yakut (en az 1 kafatası).",
+  "book4_blue": "Torbanızdaki sıradaki 2 pulu görün (Hayalet 4 için 4). 1 tanesini kazana yerleştirip kalanını geri koyabilirsiniz.",
+  "book4_green": "Tur Sonu: Her örümcek çifti için 1 ZP. Kazanınız patlamadıysa ayrıca +1 yakut kazanın.",
+  "book4_purple": "Tur Sonu: 1 güve = 1 yakut. 2 güve = 1 yakut & 1 ZP. 3+ güve = 2 yakut & 2 ZP.",
+  "book4_red": "Kazanınızda zaten en az iki adet 1 değerinde pul varsa 1 adım fazla ilerleyin (4+ için 2 adım).",
+  "book4_yellow": "Önceki pul patlama böğürtleniyse, onu torbanıza geri koyun (patlama puanını düşürür).",
+  "settings_set4": "Set 4 (Yüksek Risk & Hızlı Tempo)",
+  "ach_webmaster_title": "Ağ Ustası",
+  "ach_webmaster_desc": "Kitap Seti 4'te, patlamayan bir kazanı 12 veya daha fazla örümcekle tamamlayın",
+  "ach_seance_master_title": "Ruh Çağırma Ustası",
+  "ach_seance_master_desc": "Kitap Seti 4'te patlamadan art arda 4 hayalet pulu yerleştirin",
+  "modal_ghost_gaze_title": "👻 Ruhani Bakış",
+  "modal_ghost_gaze_desc": "Torbanızın içine baktınız! Kazana koymak için 1 pul seçin veya pas geçin.",
+  "btn_pass": "Pas Geç (Torbaya Geri Koy)"
 }

@@ -219,5 +219,19 @@
   "vp": "PV",
   "char_engineer": "O Engenheiro",
   "shop_desc_engineer": "Compre todas as fichas sem limitações — compras ilimitadas e várias da mesma cor!",
-  "book_brown": "Ingrediente especial de besouro. Avança com precisão."
+  "book_brown": "Ingrediente especial de besouro. Avança com precisão.",
+  "book4_black": "Fim da rodada: Mais crânios de corvo = +1 gota e +1 PV. Empate no 1º lugar = +1 rubi (mín. 1 crânio).",
+  "book4_blue": "Olhe as próximas 2 fichas do saco (4 para Fantasma 4). Você pode colocar 1 no caldeirão e devolver o resto.",
+  "book4_green": "Fim da rodada: 1 PV para cada par de aranhas. Se o caldeirão não explodiu, ganhe também +1 rubi.",
+  "book4_purple": "Fim da rodada: 1 mariposa = 1 rubi. 2 mariposas = 1 rubi e 1 PV. 3+ mariposas = 2 rubis e 2 PV.",
+  "book4_red": "Se seu caldeirão já tiver 2+ fichas de valor 1, avance 1 espaço extra (2 se tiver 4+ fichas).",
+  "book4_yellow": "Se a ficha anterior foi uma baga explosiva, devolva-a ao saco, diminuindo sua contagem branca.",
+  "settings_set4": "Set 4 (Alto risco e ritmo)",
+  "ach_webmaster_title": "Mestre da teia",
+  "ach_webmaster_desc": "No Set 4, termine um caldeirão não explodido com 12 ou mais aranhas",
+  "ach_seance_master_title": "Mestre da sessão",
+  "ach_seance_master_desc": "No Set 4, encadeie 4 fichas de fantasma seguidas sem explodir",
+  "modal_ghost_gaze_title": "👻 Olhar etéreo",
+  "modal_ghost_gaze_desc": "Você espiou dentro do saco! Escolha 1 ficha para o caldeirão ou passe.",
+  "btn_pass": "Passar (Devolver ao saco)"
 }

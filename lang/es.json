@@ -219,5 +219,19 @@
   "vp": "PV",
   "char_engineer": "El Ingeniero",
   "shop_desc_engineer": "¡Compra todas las fichas sin limitaciones: compras ilimitadas y múltiples del mismo color!",
-  "book_brown": "Ingrediente especial de escarabajo. Avanza con precisión."
+  "book_brown": "Ingrediente especial de escarabajo. Avanza con precisión.",
+  "book4_black": "Fin de ronda: Más calaveras de cuervo = +1 gota y +1 PV. Empate en primer lugar = +1 rubí (mínimo 1 calavera).",
+  "book4_blue": "Mira las siguientes 2 fichas de tu bolsa (4 para Fantasma 4). Puedes colocar 1 en tu caldero y devolver el resto.",
+  "book4_green": "Fin de ronda: 1 PV por cada par de arañas. Si tu caldero no explotó, gana también +1 rubí.",
+  "book4_purple": "Fin de ronda: 1 polilla = 1 rubí. 2 polillas = 1 rubí y 1 PV. 3+ polillas = 2 rubíes y 2 PV.",
+  "book4_red": "Si tu caldero ya tiene 2+ fichas de valor 1, avanza 1 espacio extra (2 si hay 4+ fichas).",
+  "book4_yellow": "Si la ficha anterior era una baya explosiva, devuélvela a tu bolsa, reduciendo tu cuenta de explosión.",
+  "settings_set4": "Set 4 (Alto riesgo y velocidad)",
+  "ach_webmaster_title": "Maestro de la red",
+  "ach_webmaster_desc": "En el Set 4, termina un caldero sin explotar con 12 o más fichas de araña",
+  "ach_seance_master_title": "Maestro de la sesión",
+  "ach_seance_master_desc": "En el Set 4, encadena 4 fichas de fantasma consecutivas sin explotar",
+  "modal_ghost_gaze_title": "👻 Mirada etérea",
+  "modal_ghost_gaze_desc": "¡Miraste en tu bolsa! Elige 1 ficha para colocar en tu caldero o pasa.",
+  "btn_pass": "Pasar (Devolver a la bolsa)"
 }

@@ -552,6 +552,7 @@
                 <option value="1" data-i18n="settings_set1">Set 1 (Beginner Friendly)</option>
                 <option value="2" data-i18n="settings_set2">Set 2 (Advanced Strategies)</option>
                 <option value="3" data-i18n="settings_set3">Set 3 (Living on the edge)</option>
+                <option value="4" data-i18n="settings_set4">Set 4 (High Stakes & Tempo)</option>
             </select>
 
             <div style="margin-top: 20px; text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
@@ -730,6 +731,17 @@
         </div>
     </div>
 
+    <div id="ghost-gaze-modal" class="modal-overlay" style="z-index: 1008;">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2 data-i18n="modal_ghost_gaze_title">👻 Ethereal Gaze</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #aaa;" data-i18n="modal_ghost_gaze_desc">You peered into your bag! Choose 1 chip to place in your cauldron, or pass.</p>
+            <div id="ghost-gaze-items" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 20px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <!-- Tokens injected here via JS -->
+            </div>
+            <button id="btn-pass-ghost-gaze" style="background-color: #4a4e69;" data-i18n="btn_pass">Pass (Return to Bag)</button>
+        </div>
+    </div>
+
     <div id="sugar-rush-modal" class="modal-overlay" style="z-index: 1008;">
         <div class="modal-content" style="max-width: 500px;">
             <h2 data-i18n="modal_sugar_rush_title">🍭 Sugar Rush!</h2>
@@ -797,7 +809,7 @@
         };
 
         // Global mutable variables for localized text
-        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, INGREDIENT_BOOKS_SET_3, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
+        let INGREDIENTS, TRACK_REWARDS, VP_RAT_SPACES, FORTUNE_CARDS, BONUS_DIE_FACES, INGREDIENT_BOOKS_SET_1, INGREDIENT_BOOKS_SET_2, INGREDIENT_BOOKS_SET_3, INGREDIENT_BOOKS_SET_4, SHOP_CATALOG, CHARACTER_POWERS, ACHIEVEMENTS_DEF;
 
         function initGameData() {
             INGREDIENTS = {
@@ -1154,6 +1166,157 @@
                 }
             };
 
+            INGREDIENT_BOOKS_SET_4 = {
+                ORANGE: { 
+                    description: t('book_orange', "Standard ingredient. Adds value to your brew but has no special effect."),
+                    immediate: (p, c) => {
+                        if (p.game.config.orangeExtraSpace) {
+                            p.currentBrewValue += 1;
+                            c.spaceIndex += 1;
+                        }
+                    }
+                },
+                WHITE: { description: t('book_white', "If the total value of Boomberries in your cauldron exceeds the explosion limit (usually 7), your cauldron explodes.") },
+                BROWN: { description: t('book_brown', "Special bug ingredient. Crawls ahead with precision.") },
+                RED: { 
+                    description: t('book4_red', "If your cauldron already contains 2+ chips of value 1, move 1 extra space (2 extra spaces if 4+)."),
+                    immediate: (p, c) => { 
+                        const priorChips = p.cauldron.slice(0, -1);
+                        const countOnes = priorChips.filter(ch => ch.value === 1).length;
+                        let bonus = 0;
+                        if (countOnes >= 4) {
+                            bonus = 2;
+                        } else if (countOnes >= 2) {
+                            bonus = 1;
+                        }
+                        if (bonus > 0) {
+                            p.currentBrewValue += bonus;
+                            c.spaceIndex += bonus;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Toadstool surged forward +${bonus} extra spaces!`);
+                        }
+                    } 
+                },
+                YELLOW: { 
+                    description: t('book4_yellow', "If the previous chip was a Boomberry, return that Boomberry to your bag, lowering your explosion count."),
+                    immediate: (p, c) => { 
+                        if (p.cauldron.length >= 2 && p.cauldron[p.cauldron.length - 2].type.id === 'WHITE') {
+                            const whiteChip = p.cauldron.splice(p.cauldron.length - 2, 1)[0];
+                            p.currentWhiteValue = Math.max(0, p.currentWhiteValue - whiteChip.value);
+                            p.bag.push({ type: whiteChip.type, value: whiteChip.value });
+                            if (p.game.uiManager) {
+                                p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake cleansed <strong style="color:white">Boomberry ${whiteChip.value}</strong> back into the bag!`);
+                            }
+                        }
+                    } 
+                },
+                BLUE: { 
+                    description: t('book4_blue', "Look at the next 2 chips in your bag (4 for Ghost 4). You may place 1 in your cauldron and return the rest."),
+                    immediate: async (p, c) => { 
+                        if (p.bag.length === 0) return;
+                        const peekCount = Math.min(p.bag.length, c.value === 4 ? 4 : 2);
+                        const peekIndices = [];
+                        const availableIndices = Array.from({ length: p.bag.length }, (_, i) => i);
+                        for (let i = 0; i < peekCount; i++) {
+                            const randIdx = Math.floor(Math.random() * availableIndices.length);
+                            peekIndices.push(availableIndices.splice(randIdx, 1)[0]);
+                        }
+                        const peekedChips = peekIndices.map(i => ({ chip: p.bag[i], originalIndex: i }));
+                        
+                        if (p.isHuman && p.game.uiManager) {
+                            p.game.uiManager.showGhostGazeModal(peekedChips);
+                        } else {
+                            const threshold = p.game.config.explosionThreshold + (p.explosionLimitOffset || 0);
+                            const safeChips = peekedChips.filter(item => {
+                                if (item.chip.type.id === 'WHITE') {
+                                    return (p.currentWhiteValue + item.chip.value) <= threshold;
+                                }
+                                return true;
+                            });
+                            
+                            if (safeChips.length > 0) {
+                                safeChips.sort((a, b) => {
+                                    const aWhite = a.chip.type.id === 'WHITE' ? 1 : 0;
+                                    const bWhite = b.chip.type.id === 'WHITE' ? 1 : 0;
+                                    if (aWhite !== bWhite) return aWhite - bWhite;
+                                    return b.chip.value - a.chip.value;
+                                });
+                                const chosen = safeChips[0];
+                                const realBagIndex = p.bag.indexOf(chosen.chip);
+                                if (realBagIndex !== -1) {
+                                    if (p.game.uiManager) {
+                                        p.game.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> gazed into the bag and chose <strong style="color:${chosen.chip.type.color}">${chosen.chip.type.name} ${chosen.chip.value}</strong>`);
+                                    }
+                                    p.drawChip(realBagIndex);
+                                }
+                            } else {
+                                if (p.game.uiManager) {
+                                    p.game.uiManager.addLog(`<span style="color:#ccc">[${p.name}]</span> gazed into the bag but passed.`);
+                                }
+                            }
+                        }
+                    } 
+                },
+                GREEN: { 
+                    description: t('book4_green', "End of Round: 1 VP for every pair of Spiders. If cauldron did not explode, gain +1 Ruby as well."),
+                    endOfRound: (p) => { 
+                        const count = p.cauldron.filter(c => c.type.id === 'GREEN').length;
+                        const pairs = Math.floor(count / 2);
+                        if (pairs > 0) {
+                            p.victoryPoints += pairs;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received ${pairs} VP from Spider pairs.`);
+                        }
+                        if (!p.exploded && count > 0) {
+                            p.rubies += 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Ruby from Spiders.`);
+                        }
+                    } 
+                },
+                PURPLE: { 
+                    description: t('book4_purple', "End of Round: 1 Moth = 1 Ruby. 2 Moths = 1 Ruby & 1 VP. 3+ Moths = 2 Rubies & 2 VP."),
+                    endOfRound: (p) => { 
+                        const cnt = p.cauldron.filter(c => c.type.id === 'PURPLE').length;
+                        if (cnt === 1) {
+                            p.rubies += 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Ruby from Moths.`);
+                        } else if (cnt === 2) {
+                            p.rubies += 1;
+                            p.victoryPoints += 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 1 Ruby and 1 VP from Moths.`);
+                        } else if (cnt >= 3) {
+                            p.rubies += 2;
+                            p.victoryPoints += 2;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> received 2 Rubies and 2 VP from Moths.`);
+                        }
+                    } 
+                },
+                BLACK: { 
+                    description: t('book4_black', "End of Round: Most Crow Skulls = +1 Droplet & +1 VP. Tied for most = +1 Ruby (min 1 Crow Skull)."),
+                    endOfRound: (p) => { 
+                        const myCount = p.cauldron.filter(c => c.type.id === 'BLACK').length;
+                        if (myCount === 0) return;
+                        
+                        let maxOther = 0;
+                        p.game.players.forEach(other => {
+                            if (other !== p) {
+                                const count = other.cauldron.filter(c => c.type.id === 'BLACK').length;
+                                if (count > maxOther) {
+                                    maxOther = count;
+                                }
+                            }
+                        });
+                        
+                        if (myCount > maxOther) {
+                            p.dropletPosition += 1;
+                            p.victoryPoints += 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> had the most Crow Skulls (${myCount}) and received 1 Droplet step and 1 VP!`);
+                        } else if (myCount === maxOther) {
+                            p.rubies += 1;
+                            if (p.game.uiManager) p.game.uiManager.addLog(`End of round: <span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span> tied for the most Crow Skulls (${myCount}) and received 1 Ruby!`);
+                        }
+                    } 
+                }
+            };
+
             SHOP_CATALOG = [
                 { type: INGREDIENTS.ORANGE, value: 1, cost: 3 }, { type: INGREDIENTS.ORANGE, value: 6, cost: 22 },
                 { type: INGREDIENTS.GREEN, value: 1, cost: 4 }, { type: INGREDIENTS.GREEN, value: 2, cost: 8 }, { type: INGREDIENTS.GREEN, value: 4, cost: 14 },
@@ -1177,7 +1340,9 @@
                 'BIG_SPENDER': { titleKey: 'ach_big_spender_title', defaultTitle: 'Big Spender', descKey: 'ach_big_spender_desc', defaultDesc: 'Spend more than 56 coins in the shop' },
                 'META_CHARLATAN': { titleKey: 'ach_meta_charlatan_title', defaultTitle: 'Meta-charlatan', descKey: 'ach_meta_charlatan_desc', defaultDesc: 'Place a token using the debug draw dialog.' },
                 'STAY_HYDRATED': { titleKey: 'ach_stay_hydrated_title', defaultTitle: 'Stay Hydrated', descKey: 'ach_stay_hydrated_desc', defaultDesc: 'Achieve 18 or more droplet upgrades' },
-                'RAT_VICHYSSOISE': { titleKey: 'ach_rat_vichyssoise_title', defaultTitle: 'Rat Vichyssoise', descKey: 'ach_rat_vichyssoise_desc', defaultDesc: 'Get 20 or more rat tails in a single round' }
+                'RAT_VICHYSSOISE': { titleKey: 'ach_rat_vichyssoise_title', defaultTitle: 'Rat Vichyssoise', descKey: 'ach_rat_vichyssoise_desc', defaultDesc: 'Get 20 or more rat tails in a single round' },
+                'WEBMASTER': { titleKey: 'ach_webmaster_title', defaultTitle: 'Webmaster', descKey: 'ach_webmaster_desc', defaultDesc: 'In Book Set 4, finish an unexploded cauldron with 12 or more Green chips' },
+                'SEANCE_MASTER': { titleKey: 'ach_seance_master_title', defaultTitle: 'Séance Master', descKey: 'ach_seance_master_desc', defaultDesc: 'In Book Set 4, chain 4 consecutive Ghost placements without exploding' }
             };
         }
 
@@ -1288,7 +1453,9 @@
             'BIG_SPENDER':     { x: 0/4, y: 1/2, w: 1/4, h: 1/2 },
             'META_CHARLATAN':  { x: 1/4, y: 1/2, w: 1/4, h: 1/2 },
             'STAY_HYDRATED':   { x: 2/4, y: 1/2, w: 1/4, h: 1/2 },
-            'RAT_VICHYSSOISE': { x: 3/4, y: 1/2, w: 1/4, h: 1/2 }
+            'RAT_VICHYSSOISE': { x: 3/4, y: 1/2, w: 1/4, h: 1/2 },
+            'WEBMASTER':       { url: './assets/ach_webmaster.png' },
+            'SEANCE_MASTER':   { url: './assets/ach_seance_master.png' }
         };
 
         // 8x4 Grid Constants for Characters
@@ -1351,6 +1518,9 @@
         function getAchievementSpriteStyle(achId) {
             const def = ACHIEVEMENT_MAP[achId];
             if (!def) return '';
+            if (def.url) {
+                return `background-image: url('${def.url}'); background-size: cover; background-position: center; background-repeat: no-repeat;`;
+            }
             const posX = def.w < 1 ? (def.x / (1 - def.w)) * 100 : 0;
             const posY = def.h < 1 ? (def.y / (1 - def.h)) * 100 : 0;
             return `background-image: url('${ASSET_PATHS.ACHIEVEMENTS}'); background-size: ${100/def.w}% ${100/def.h}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`;
@@ -1368,7 +1538,8 @@
         function getAchievementFallbackEmoji(achId) {
             const EMOJIS = {
                 'MEGA_PUMPKIN': '🎃', 'POINT_MAXXING': '💯', 'KABOOM': '💥', 'TIE_FIGHTER': '⚔️',
-                'BIG_SPENDER': '💸', 'META_CHARLATAN': '🛠️', 'STAY_HYDRATED': '💧', 'RAT_VICHYSSOISE': '🐀'
+                'BIG_SPENDER': '💸', 'META_CHARLATAN': '🛠️', 'STAY_HYDRATED': '💧', 'RAT_VICHYSSOISE': '🐀',
+                'WEBMASTER': '🕸️', 'SEANCE_MASTER': '👻'
             };
             return EMOJIS[achId] || '🏆';
         }
@@ -1422,6 +1593,7 @@
                 this.explodedAt = null;
                 this.specialPowerActive = false;
                 this.explosionLimitOffset = 0;
+                this.consecutiveBlueCount = 0;
                 this.currentBrewValue = this.dropletPosition + this.ratTails;
                 this.currentWhiteValue = 0; this.hasStopped = false;
                 this.moneySpentThisRound = 0;
@@ -1445,6 +1617,15 @@
                 this.cauldron.push(placedChip);
                 this.currentBrewValue = newPosition;
                 
+                if (chip.type.id === 'BLUE') {
+                    this.consecutiveBlueCount = (this.consecutiveBlueCount || 0) + 1;
+                    if (this.isHuman && this.consecutiveBlueCount >= 4 && !this.exploded && this.game.config.bookSet === 4 && this.game.uiManager) {
+                        this.game.uiManager.unlockAchievement('SEANCE_MASTER');
+                    }
+                } else {
+                    this.consecutiveBlueCount = 0;
+                }
+
                 if (chip.type.id === 'WHITE') this.currentWhiteValue += chip.value;
 
                 if (this.game.uiManager) {
@@ -1495,7 +1676,7 @@
             constructor(config) {
                 this.config = { totalRounds: 9, numAIs: 2, explosionThreshold: 7, bookSet: 1, orangeExtraSpace: false, useCharacterPowers: false, ...config };
                 this.round = 1; this.phase = 'Brewing'; this.players = []; 
-                this.books = this.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
+                this.books = this.config.bookSet === 4 ? INGREDIENT_BOOKS_SET_4 : (this.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (this.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1));
             }
 
             setupPlayers(humanCharName) {
@@ -1767,6 +1948,12 @@
                     for (const color of Object.keys(this.books)) {
                         if (this.books[color] && this.books[color].endOfRound) {
                             await this.books[color].endOfRound(p); 
+                        }
+                    }
+                    if (p.isHuman && this.config.bookSet === 4 && !p.exploded && this.uiManager) {
+                        const greenCount = p.cauldron.filter(c => c.type.id === 'GREEN').length;
+                        if (greenCount >= 12) {
+                            this.uiManager.unlockAchievement('WEBMASTER');
                         }
                     }
                     if (p.roundRuby) p.rubies += 1;
@@ -2709,6 +2896,75 @@
                 });
             }
 
+            showGhostGazeModal(peekedItems) {
+                const h = this.game.humanPlayer;
+                const modal = document.getElementById('ghost-gaze-modal');
+                const container = document.getElementById('ghost-gaze-items');
+                if (!container || !modal) return;
+                container.innerHTML = '';
+
+                peekedItems.forEach(({ chip }) => {
+                    const elWrapper = document.createElement('div');
+                    elWrapper.style.cssText = "display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; padding: 10px; border-radius: 8px; transition: transform 0.2s, background 0.2s; border: 2px solid transparent;";
+                    elWrapper.addEventListener('mouseenter', () => { elWrapper.style.backgroundColor = 'rgba(255,255,255,0.1)'; elWrapper.style.borderColor = 'gold'; elWrapper.style.transform = 'scale(1.08)'; });
+                    elWrapper.addEventListener('mouseleave', () => { elWrapper.style.backgroundColor = 'transparent'; elWrapper.style.borderColor = 'transparent'; elWrapper.style.transform = 'scale(1)'; });
+
+                    const chipStyle = getChipSpriteStyle(chip.type.id, chip.value);
+                    const chipEl = document.createElement('div');
+                    chipEl.className = 'chip-icon';
+                    chipEl.style.cssText = `width: 55px; height: 55px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); ${chipStyle || `background-color: ${chip.type.color};`}`;
+                    if (!chipStyle) {
+                        chipEl.innerText = chip.value;
+                        chipEl.style.display = 'flex';
+                        chipEl.style.alignItems = 'center';
+                        chipEl.style.justifyContent = 'center';
+                        chipEl.style.color = chip.type.textCol || 'white';
+                        chipEl.style.fontWeight = 'bold';
+                        chipEl.style.fontSize = '1.3rem';
+                    }
+
+                    const label = document.createElement('div');
+                    label.style.cssText = `font-size: 0.85rem; font-weight: bold; color: ${chip.type.color === '#ffffff' ? '#ddd' : chip.type.color}; text-shadow: 1px 1px 0 #000;`;
+                    label.innerText = `${chip.type.name} ${chip.value}`;
+
+                    elWrapper.appendChild(chipEl);
+                    elWrapper.appendChild(label);
+
+                    elWrapper.onclick = async () => {
+                        modal.style.display = 'none';
+                        const bagIndex = h.bag.indexOf(chip);
+                        if (bagIndex !== -1) {
+                            this.addLog(`<span style="color:gold">[${h.name}]</span> gazed into the bag and chose <strong style="color:${chip.type.color}">${chip.type.name} ${chip.value}</strong>`);
+                            const wasExploded = h.exploded;
+                            h.drawChip(bagIndex);
+                            this.updateFullUI();
+                            if (!wasExploded && h.exploded) {
+                                await this.playExplosionVideo();
+                            }
+                            if (h.exploded || h.hasStopped) {
+                                this.game.checkBrewingPhaseEnd();
+                            }
+                        }
+                    };
+                    container.appendChild(elWrapper);
+                });
+
+                const passBtn = document.getElementById('btn-pass-ghost-gaze');
+                if (passBtn) {
+                    passBtn.onclick = () => {
+                        modal.style.display = 'none';
+                        this.addLog(`<span style="color:gold">[${h.name}]</span> gazed into the bag and returned all chips.`);
+                        this.updateFullUI();
+                        if (h.bag.length === 0) {
+                            h.hasStopped = true;
+                            this.game.checkBrewingPhaseEnd();
+                        }
+                    };
+                }
+
+                modal.style.display = 'flex';
+            }
+
             showSugarRushModal() {
                 const h = this.game.humanPlayer;
                 const container = document.getElementById('sugar-rush-items');
@@ -2996,15 +3252,17 @@
             showSettings() {
                 // Book Set Settings
                 const selectEl = document.getElementById('settings-book-select');
-                selectEl.value = this.game.config.bookSet || 1;
-                
-                selectEl.onchange = (e) => {
-                    const val = parseInt(e.target.value);
-                    setCookie('selectedBookSet', val, 365);
-                    this.game.config.bookSet = val;
-                    this.game.books = val === 3 ? INGREDIENT_BOOKS_SET_3 : (val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
-                    this.updateFullUI();
-                };
+                if (selectEl) {
+                    selectEl.value = String(this.game.config.bookSet || 1);
+                    selectEl.onchange = (e) => {
+                        const val = parseInt(e.target.value);
+                        setCookie('selectedBookSet', val, 365);
+                        this.game.config.bookSet = val;
+                        this.game.books = val === 4 ? INGREDIENT_BOOKS_SET_4 : (val === 3 ? INGREDIENT_BOOKS_SET_3 : (val === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1));
+                        this.addLog(`⚙️ Switched ingredient rules to <strong>Set ${val}</strong>`);
+                        this.updateFullUI();
+                    };
+                }
                 
                 // Character Powers Setting
                 const powersCheckbox = document.getElementById('settings-powers-checkbox');
@@ -4051,6 +4309,43 @@
                             projectedRuby = newTrack.ruby ? 1 : 0;
                         }
                     }
+                } else if (bookSet === 4) {
+                    // Project Green (Spider) pair bonuses and unexploded ruby
+                    const greenCount = player.cauldron.filter(c => c.type.id === 'GREEN').length;
+                    const greenPairs = Math.floor(greenCount / 2);
+                    projectedVP += greenPairs;
+                    if (!player.exploded && greenCount > 0) {
+                        projectedRuby += 1;
+                    }
+
+                    // Project Purple (Moth) bonuses
+                    const mothCount = player.cauldron.filter(c => c.type.id === 'PURPLE').length;
+                    if (mothCount === 1) {
+                        projectedRuby += 1;
+                    } else if (mothCount === 2) {
+                        projectedRuby += 1;
+                        projectedVP += 1;
+                    } else if (mothCount >= 3) {
+                        projectedRuby += 2;
+                        projectedVP += 2;
+                    }
+
+                    // Project Black (Crow Skull) bonuses
+                    const blackCount = player.cauldron.filter(c => c.type.id === 'BLACK').length;
+                    if (blackCount > 0) {
+                        let maxOtherBlack = 0;
+                        this.game.players.forEach(other => {
+                            if (other !== player) {
+                                const cnt = other.cauldron.filter(c => c.type.id === 'BLACK').length;
+                                if (cnt > maxOtherBlack) maxOtherBlack = cnt;
+                            }
+                        });
+                        if (blackCount > maxOtherBlack) {
+                            projectedVP += 1;
+                        } else if (blackCount === maxOtherBlack) {
+                            projectedRuby += 1;
+                        }
+                    }
                 }
 
                 return { vp: projectedVP, money: projectedMoney, rubies: projectedRuby };
@@ -4068,6 +4363,14 @@
                 // Check Stay Hydrated Achievement
                 if (human.dropletPosition >= 18) {
                     this.unlockAchievement('STAY_HYDRATED');
+                }
+
+                // Check Webmaster Achievement
+                if (this.game.config.bookSet === 4 && human.hasStopped && !human.exploded) {
+                    const greenCount = human.cauldron.filter(c => c.type.id === 'GREEN').length;
+                    if (greenCount >= 12) {
+                        this.unlockAchievement('WEBMASTER');
+                    }
                 }
 
                 // Hide the explosion video when we reset for a new round
@@ -4496,6 +4799,8 @@
 
             // 3. Boot Game and Check Character Selection
             const savedBookSet = parseInt(getCookie('selectedBookSet')) || 1;
+            const initSelectEl = document.getElementById('settings-book-select');
+            if (initSelectEl) initSelectEl.value = String(savedBookSet);
             const savedPowersCookie = getCookie('useCharacterPowers');
             const savedPowers = savedPowersCookie === null ? true : savedPowersCookie === '1';
             const gameConfig = { numAIs: 2, bookSet: savedBookSet, useCharacterPowers: savedPowers }; 
@@ -4563,7 +4868,7 @@
                     });
                     
                     initGameData();
-                    gameController.books = gameController.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1);
+                    gameController.books = gameController.config.bookSet === 4 ? INGREDIENT_BOOKS_SET_4 : (gameController.config.bookSet === 3 ? INGREDIENT_BOOKS_SET_3 : (gameController.config.bookSet === 2 ? INGREDIENT_BOOKS_SET_2 : INGREDIENT_BOOKS_SET_1));
                     
                     // Update active fortune card reference for the UI string update
                     if (gameController.currentFortuneCard) {
@@ -4615,6 +4920,7 @@
                 navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        registration.update();
                     }, (err) => {
                         console.log('ServiceWorker registration failed: ', err);
                     });

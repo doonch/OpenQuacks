@@ -220,5 +220,19 @@
   "vp": "PB",
   "char_engineer": "An tInnealtóir",
   "shop_desc_engineer": "Ceannaigh gach comhartha gan teorainn - ceannacháin neamhtheoranta, agus níos mó ná ceann amháin den dath céanna!",
-  "book_brown": "Comhábhar speisialta feithidí. Bogann sé ar aghaidh go beacht."
+  "book_brown": "Comhábhar speisialta feithidí. Bogann sé ar aghaidh go beacht.",
+  "book4_black": "Deireadh Babhta: Na cloigne préacháin is mó = +1 spás braon & +1 pointe bua. Comhscór ar an gcéad áit = +1 rúibín.",
+  "book4_blue": "Féach ar an gcéad 2 chomhartha eile i do mhála (4 do Thaibhse 4). Is féidir leat 1 a chur sa choire.",
+  "book4_green": "Deireadh Babhta: 1 pointe bua do gach péire damhán alla. Mura bpléascann an coire, faigh +1 rúibín freisin.",
+  "book4_purple": "Deireadh Babhta: 1 leamhan = 1 rúibín. 2 leamhan = 1 rúibín & 1 pointe bua. 3+ leamhan = 2 rúibín & 2 phointe bua.",
+  "book4_red": "Má tá 2+ comhartha de luach 1 agat cheana féin sa choire, téigh 1 spás breise (2 spás do 4+).",
+  "book4_yellow": "Más caor phléasctha an comhartha roimhe seo, cuir ar ais sa mhála é (laghdaítear an luach pléasctha).",
+  "settings_set4": "Tacar 4 (Ard-Riosca & Luas)",
+  "ach_webmaster_title": "Máistir an Lín",
+  "ach_webmaster_desc": "I dTacar Leabhar 4, críochnaigh coire neamhphléasctha le 12 dhamhán alla nó níos mó",
+  "ach_seance_master_title": "Máistir an Taibhse",
+  "ach_seance_master_desc": "I dTacar Leabhar 4, cuir 4 thaibhse i ndiaidh a chéile gan pléascadh",
+  "modal_ghost_gaze_title": "👻 Radharc Éitreach",
+  "modal_ghost_gaze_desc": "D'fhéach tú isteach i do mhála! Roghnaigh comhartha amháin don choire nó pasáil.",
+  "btn_pass": "Pasáil (Ar ais sa mhála)"
 }
