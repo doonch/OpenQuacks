@@ -228,9 +228,9 @@
   "book4_yellow": "Önceki pul patlama böğürtleniyse, onu torbanıza geri koyun (patlama puanını düşürür).",
   "settings_set4": "Set 4 (Yüksek Risk & Hızlı Tempo)",
   "ach_webmaster_title": "Ağ Ustası",
-  "ach_webmaster_desc": "Kitap Seti 4'te, patlamayan bir kazanı 12 veya daha fazla örümcekle tamamlayın",
+  "ach_webmaster_desc": "Patlamayan bir kazanı 12 veya daha fazla örümcekle tamamlayın",
   "ach_seance_master_title": "Ruh Çağırma Ustası",
-  "ach_seance_master_desc": "Kitap Seti 4'te patlamadan art arda 4 hayalet pulu yerleştirin",
+  "ach_seance_master_desc": "Patlamadan art arda 4 hayalet pulu yerleştirin",
   "modal_ghost_gaze_title": "👻 Ruhani Bakış",
   "modal_ghost_gaze_desc": "Torbanızın içine baktınız! Kazana koymak için 1 pul seçin veya pas geçin.",
   "btn_pass": "Pas Geç (Torbaya Geri Koy)"

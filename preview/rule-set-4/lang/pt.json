@@ -228,9 +228,9 @@
   "book4_yellow": "Se a ficha anterior foi uma baga explosiva, devolva-a ao saco, diminuindo sua contagem branca.",
   "settings_set4": "Set 4 (Alto risco e ritmo)",
   "ach_webmaster_title": "Mestre da teia",
-  "ach_webmaster_desc": "No Set 4, termine um caldeirão não explodido com 12 ou mais aranhas",
+  "ach_webmaster_desc": "Termine um caldeirão não explodido com 12 ou mais aranhas",
   "ach_seance_master_title": "Mestre da sessão",
-  "ach_seance_master_desc": "No Set 4, encadeie 4 fichas de fantasma seguidas sem explodir",
+  "ach_seance_master_desc": "Encadeie 4 fichas de fantasma seguidas sem explodir",
   "modal_ghost_gaze_title": "👻 Olhar etéreo",
   "modal_ghost_gaze_desc": "Você espiou dentro do saco! Escolha 1 ficha para o caldeirão ou passe.",
   "btn_pass": "Passar (Devolver ao saco)"
