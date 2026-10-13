@@ -228,9 +228,9 @@
   "book4_yellow": "Jeśli poprzedni żeton był wybuchowy, zwróć go do worka (obniżając sumę wybuchu).",
   "settings_set4": "Zestaw 4 (Wysokie ryzyko i tempo)",
   "ach_webmaster_title": "Mistrz pajęczyny",
-  "ach_webmaster_desc": "W zestawie 4 ukończ niewybuchnięty kociołek z co najmniej 12 pająkami",
+  "ach_webmaster_desc": "Ukończ niewybuchnięty kociołek z co najmniej 12 pająkami",
   "ach_seance_master_title": "Mistrz seansu",
-  "ach_seance_master_desc": "W zestawie 4 ułóż 4 duchy z rzędu bez wybuchu",
+  "ach_seance_master_desc": "Ułóż 4 duchy z rzędu bez wybuchu",
   "modal_ghost_gaze_title": "👻 Eteryczne spojrzenie",
   "modal_ghost_gaze_desc": "Zajrzałeś do worka! Wybierz 1 żeton do położenia w kociołku lub spasuj.",
   "btn_pass": "Pasuj (Zwróć do worka)"

@@ -228,9 +228,9 @@
   "book4_yellow": "If the previous chip was a Boomberry, return that Boomberry to your bag, lowering your explosion count.",
   "settings_set4": "Set 4 (High Stakes & Tempo)",
   "ach_webmaster_title": "Webmaster",
-  "ach_webmaster_desc": "In Book Set 4, finish an unexploded cauldron with 12 or more Green chips",
+  "ach_webmaster_desc": "Finish an unexploded cauldron with 12 or more Green chips",
   "ach_seance_master_title": "Séance Master",
-  "ach_seance_master_desc": "In Book Set 4, chain 4 consecutive Ghost placements without exploding",
+  "ach_seance_master_desc": "Chain 4 consecutive Ghost placements without exploding",
   "modal_ghost_gaze_title": "👻 Ethereal Gaze",
   "modal_ghost_gaze_desc": "You peered into your bag! Choose 1 chip to place in your cauldron, or pass.",
   "btn_pass": "Pass (Return to Bag)"

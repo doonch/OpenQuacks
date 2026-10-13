@@ -228,9 +228,9 @@
   "book4_yellow": "若上一药片为爆炸果实，将其放回袋中（降低当前爆炸数值）。",
   "settings_set4": "配方4（高风险高节奏）",
   "ach_webmaster_title": "蛛网大师",
-  "ach_webmaster_desc": "在配方4中，在未爆炸的大锅中集齐12个或更多蜘蛛药片完成配制",
+  "ach_webmaster_desc": "在未爆炸的大锅中集齐12个或更多蜘蛛药片完成配制",
   "ach_seance_master_title": "通灵大师",
-  "ach_seance_master_desc": "在配方4中，在不爆炸的情况下连续放置4个幽灵药片",
+  "ach_seance_master_desc": "在不爆炸的情况下连续放置4个幽灵药片",
   "modal_ghost_gaze_title": "👻 虚空凝视",
   "modal_ghost_gaze_desc": "你窥视了药袋！选择1个药片放入大锅，或选择跳过。",
   "btn_pass": "跳过（全部放回袋中）"
