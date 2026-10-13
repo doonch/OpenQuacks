@@ -311,6 +311,38 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
+        #tutorial-skip-btn {
+            position: fixed;
+            top: max(14px, env(safe-area-inset-top, 14px));
+            right: max(18px, env(safe-area-inset-right, 18px));
+            z-index: 2005;
+            background: rgba(20, 20, 35, 0.6);
+            color: #9ca3af;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: color 0.2s, background 0.2s, opacity 0.3s, border-color 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #tutorial-skip-btn:hover {
+            color: #e5e7eb;
+            background: rgba(30, 30, 50, 0.85);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        [dir="rtl"] #tutorial-skip-btn {
+            right: auto;
+            left: max(18px, env(safe-area-inset-left, 18px));
+        }
 
         /* --- Modal & Shop Styles --- */
         .modal-overlay {
@@ -428,6 +460,7 @@
     <!-- Tutorial Elements -->
     <div id="tutorial-overlay"></div>
     <div id="tutorial-tooltip" style="display: none;"></div>
+    <button id="tutorial-skip-btn" style="display: none;" data-i18n="btn_skip">Skip</button>
 
     <div id="game-container">
         <!-- Main Board Area -->
@@ -2234,6 +2267,7 @@
             updateTutorialUI() {
                 const overlay = document.getElementById('tutorial-overlay');
                 const tooltip = document.getElementById('tutorial-tooltip');
+                const skipBtn = document.getElementById('tutorial-skip-btn');
                 
                 // Clear previous highlights
                 document.querySelectorAll('.tutorial-highlight').forEach(el => {
@@ -2244,10 +2278,15 @@
                 if (this.tutorialStep === 0) {
                     overlay.style.opacity = '0';
                     tooltip.style.opacity = '0';
+                    if (skipBtn) {
+                        skipBtn.style.opacity = '0';
+                        skipBtn.style.pointerEvents = 'none';
+                    }
                     setTimeout(() => {
                         if (this.tutorialStep === 0) {
                             overlay.style.display = 'none';
                             tooltip.style.display = 'none';
+                            if (skipBtn) skipBtn.style.display = 'none';
                         }
                     }, 300);
                     return;
@@ -2255,6 +2294,15 @@
                 
                 if (tooltip.style.display === 'none' || tooltip.style.display === '') {
                     tooltip.style.display = 'block';
+                }
+                if (skipBtn) {
+                    skipBtn.innerText = t('btn_skip', 'Skip');
+                    if (skipBtn.style.display === 'none' || skipBtn.style.display === '') {
+                        skipBtn.style.display = 'block';
+                    }
+                    void skipBtn.offsetWidth;
+                    skipBtn.style.opacity = '1';
+                    skipBtn.style.pointerEvents = 'auto';
                 }
                 
                 // The overlay blocks all interactions on the page. We conditionally hide it if a modal is managing the dark background.
@@ -2446,6 +2494,21 @@
                     this.handleResize();
                     if (this.tutorialStep > 0) this.updateTutorialUI();
                 });
+
+                const skipBtn = document.getElementById('tutorial-skip-btn');
+                if (skipBtn) {
+                    skipBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.tutorialStep = 0;
+                        setCookie('hasSeenHelp', 'true', 365);
+                        this.updateTutorialUI();
+                        this.updateFullUI();
+                        if (typeof window.__maybeShowInstallNudge === 'function') {
+                            window.__maybeShowInstallNudge();
+                        }
+                    });
+                }
 
                 const sackEl = document.getElementById('ui-sack');
                 if (sackEl) {
