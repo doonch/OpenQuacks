@@ -229,9 +229,9 @@
   "book4_yellow": "直前のチップが白なら、その白チップを袋に戻す（白の合計値を減らす）。",
   "settings_set4": "セット4（ハイリスク＆テンポ）",
   "ach_webmaster_title": "蜘蛛の巣の達人",
-  "ach_webmaster_desc": "ブックセット4で、爆発せずに大鍋にクモを12枚以上集めて完了する",
+  "ach_webmaster_desc": "爆発せずに大鍋にクモを12枚以上集めて完了する",
   "ach_seance_master_title": "降霊術の大家",
-  "ach_seance_master_desc": "ブックセット4で、爆発せずに幽霊チップを4連続で引いて配置する",
+  "ach_seance_master_desc": "爆発せずに幽霊チップを4連続で引いて配置する",
   "modal_ghost_gaze_title": "👻 幽玄の眼差し",
   "modal_ghost_gaze_desc": "袋の中を覗きました！大鍋に置くチップを1枚選ぶか、パスしてください。",
   "btn_pass": "パス（袋に戻す）"

@@ -1341,8 +1341,8 @@
                 'META_CHARLATAN': { titleKey: 'ach_meta_charlatan_title', defaultTitle: 'Meta-charlatan', descKey: 'ach_meta_charlatan_desc', defaultDesc: 'Place a token using the debug draw dialog.' },
                 'STAY_HYDRATED': { titleKey: 'ach_stay_hydrated_title', defaultTitle: 'Stay Hydrated', descKey: 'ach_stay_hydrated_desc', defaultDesc: 'Achieve 18 or more droplet upgrades' },
                 'RAT_VICHYSSOISE': { titleKey: 'ach_rat_vichyssoise_title', defaultTitle: 'Rat Vichyssoise', descKey: 'ach_rat_vichyssoise_desc', defaultDesc: 'Get 20 or more rat tails in a single round' },
-                'WEBMASTER': { titleKey: 'ach_webmaster_title', defaultTitle: 'Webmaster', descKey: 'ach_webmaster_desc', defaultDesc: 'In Book Set 4, finish an unexploded cauldron with 12 or more Green chips' },
-                'SEANCE_MASTER': { titleKey: 'ach_seance_master_title', defaultTitle: 'Séance Master', descKey: 'ach_seance_master_desc', defaultDesc: 'In Book Set 4, chain 4 consecutive Ghost placements without exploding' }
+                'WEBMASTER': { titleKey: 'ach_webmaster_title', defaultTitle: 'Webmaster', descKey: 'ach_webmaster_desc', defaultDesc: 'Finish an unexploded cauldron with 12 or more Green chips' },
+                'SEANCE_MASTER': { titleKey: 'ach_seance_master_title', defaultTitle: 'Séance Master', descKey: 'ach_seance_master_desc', defaultDesc: 'Chain 4 consecutive Ghost placements without exploding' }
             };
         }
 
@@ -1619,7 +1619,7 @@
                 
                 if (chip.type.id === 'BLUE') {
                     this.consecutiveBlueCount = (this.consecutiveBlueCount || 0) + 1;
-                    if (this.isHuman && this.consecutiveBlueCount >= 4 && !this.exploded && this.game.config.bookSet === 4 && this.game.uiManager) {
+                    if (this.isHuman && this.consecutiveBlueCount >= 4 && !this.exploded && this.game.uiManager) {
                         this.game.uiManager.unlockAchievement('SEANCE_MASTER');
                     }
                 } else {
@@ -1950,7 +1950,7 @@
                             await this.books[color].endOfRound(p); 
                         }
                     }
-                    if (p.isHuman && this.config.bookSet === 4 && !p.exploded && this.uiManager) {
+                    if (p.isHuman && !p.exploded && this.uiManager) {
                         const greenCount = p.cauldron.filter(c => c.type.id === 'GREEN').length;
                         if (greenCount >= 12) {
                             this.uiManager.unlockAchievement('WEBMASTER');
@@ -4366,7 +4366,7 @@
                 }
 
                 // Check Webmaster Achievement
-                if (this.game.config.bookSet === 4 && human.hasStopped && !human.exploded) {
+                if (human.hasStopped && !human.exploded) {
                     const greenCount = human.cauldron.filter(c => c.type.id === 'GREEN').length;
                     if (greenCount >= 12) {
                         this.unlockAchievement('WEBMASTER');
