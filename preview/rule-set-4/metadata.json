@@ -1,0 +1,6 @@
+{
+  "name": "Open Quacks",
+  "description": "A web version of a medieval, fun, push-your-luck bag-building board game",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

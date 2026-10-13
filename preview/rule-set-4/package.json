@@ -1,0 +1,14 @@
+{
+  "name": "open-quacks",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A web version of a medieval, fun, push-your-luck bag-building board game",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "echo 'Build complete'",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

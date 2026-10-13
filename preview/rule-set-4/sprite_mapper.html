@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite Mapper Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #1a1a2e; color: #f5f5f5; font-family: sans-serif; }
+        .panel { background-color: #16213e; border: 2px solid #0f3460; border-radius: 8px; }
+        
+        #workspace {
+            position: relative;
+            display: inline-block;
+            cursor: crosshair;
+            user-select: none;
+            max-width: 100%;
+        }
+        #workspace img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            pointer-events: none; /* Let the container handle mouse events */
+        }
+        
+        .box {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            background-color: rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+        }
+        .box.active {
+            border: 2px solid #e94560;
+            background-color: rgba(233, 69, 96, 0.3);
+            z-index: 10;
+        }
+        .box-label {
+            position: absolute;
+            top: -20px;
+            left: -2px;
+            background: #e94560;
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .checkerboard {
+            background-image: linear-gradient(45deg, #222 25%, transparent 25%), 
+                              linear-gradient(-45deg, #222 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #222 75%), 
+                              linear-gradient(-45deg, transparent 75%, #222 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-pink-500 mb-2">📐 Open Quacks Sprite Mapper</h1>
+        <p class="text-gray-400 mb-6">Click and drag over the image to draw a bounding box for the selected sprite. The fractional coordinates will be calculated automatically.</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Controls & Preview -->
+            <div class="space-y-6">
+                
+                <!-- Image Loader -->
+                <div class="panel p-4">
+                    <h2 class="text-xl font-bold mb-3 border-b border-blue-900 pb-2">1. Load Image</h2>
+                    <p class="text-sm text-gray-400 mb-2">Loads <code class="text-pink-400 bg-gray-800 px-1 rounded">assets/utils.png</code> by default.</p>
+                    <input type="file" id="file-upload" accept="image/*" class="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                </div>
+
+                <!-- Sprite Selector -->
+                <div class="panel p-4">
+                    <h2 class="text-xl font-bold mb-3 border-b border-blue-900 pb-2">2. Select Sprite to Map</h2>
+                    <div id="sprite-list" class="flex flex-col gap-2">
+                        <!-- Buttons injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="panel p-4">
+                    <h2 class="text-xl font-bold mb-3 border-b border-blue-900 pb-2">Live CSS Preview</h2>
+                    <p class="text-xs text-gray-400 mb-3">This shows exactly how the game engine will render the currently selected item based on your drawn box.</p>
+                    <div class="flex justify-center items-center h-32 bg-gray-800 rounded checkerboard">
+                        <div id="preview-div" style="width: 50px; height: 50px;"></div>
+                    </div>
+                </div>
+                
+            </div>
+
+            <!-- Right Column: Workspace & Output -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- Drawing Area -->
+                <div class="panel p-4 overflow-hidden flex justify-center checkerboard">
+                    <div id="workspace">
+                        <img id="source-img" src="assets/utils.png" alt="Sprite Sheet" onerror="this.onerror=null; this.src=''; document.getElementById('img-error').classList.remove('hidden');">
+                        <div id="img-error" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900/80 text-red-400 p-4 text-center font-bold">
+                            Could not load assets/utils.png automatically.<br>Please use the file upload button to load your local image.
+                        </div>
+                        <div id="boxes-container"></div>
+                    </div>
+                </div>
+
+                <!-- Output Area -->
+                <div class="panel p-4">
+                    <div class="flex justify-between items-center mb-3 border-b border-blue-900 pb-2">
+                        <h2 class="text-xl font-bold">3. Generated Output</h2>
+                        <button id="btn-copy" class="bg-green-600 hover:bg-green-500 px-4 py-1 rounded font-bold transition-colors">Copy Code</button>
+                    </div>
+                    <textarea id="output-code" class="w-full h-48 bg-gray-900 border border-gray-700 rounded p-3 font-mono text-sm text-green-400 resize-none" readonly></textarea>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const UTILS_KEYS = ['FLASK_FULL', 'FLASK_EMPTY', 'RUBY', 'COIN', 'SACK', 'DROPLET', 'RAT', 'VP'];
+        
+        // Initial fallback map
+        let currentMap = {
+            FLASK_FULL:  { x: 0.00, y: 0.00, w: 0.20, h: 0.55 }, 
+            FLASK_EMPTY: { x: 0.20, y: 0.00, w: 0.20, h: 0.55 }, 
+            RUBY:        { x: 0.41, y: 0.05, w: 0.14, h: 0.45 }, 
+            COIN:        { x: 0.56, y: 0.00, w: 0.22, h: 0.55 },
+            SACK:        { x: 0.35, y: 0.55, w: 0.16, h: 0.45 },
+            DROPLET:     { x: 0.51, y: 0.55, w: 0.12, h: 0.45 }, 
+            RAT:         { x: 0.63, y: 0.55, w: 0.14, h: 0.45 }, 
+            VP:          { x: 0.77, y: 0.55, w: 0.20, h: 0.45 }  
+        };
+
+        let currentItem = 'FLASK_FULL';
+        let imgSrc = 'assets/utils.png';
+
+        // DOM Elements
+        const workspace = document.getElementById('workspace');
+        const sourceImg = document.getElementById('source-img');
+        const boxesContainer = document.getElementById('boxes-container');
+        const spriteList = document.getElementById('sprite-list');
+        const previewDiv = document.getElementById('preview-div');
+        const outputCode = document.getElementById('output-code');
+        const fileUpload = document.getElementById('file-upload');
+        const imgError = document.getElementById('img-error');
+
+        // Drawing State
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+
+        // Initialize UI
+        function init() {
+            renderSpriteList();
+            renderBoxes();
+            updatePreview();
+            updateOutput();
+
+            // Handle file upload
+            fileUpload.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imgSrc = e.target.result;
+                        sourceImg.src = imgSrc;
+                        imgError.classList.add('hidden');
+                        setTimeout(renderBoxes, 100); // Give image time to layout
+                        setTimeout(updatePreview, 100);
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            // Handle image load to fix boxes
+            sourceImg.onload = () => {
+                renderBoxes();
+                updatePreview();
+            };
+
+            // Mouse Events for drawing
+            workspace.addEventListener('mousedown', (e) => {
+                if(e.button !== 0) return; // Only left click
+                e.preventDefault();
+                const rect = workspace.getBoundingClientRect();
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+                isDrawing = true;
+                
+                // Reset current item bounds to 0 temporarily
+                currentMap[currentItem] = { x: 0, y: 0, w: 0, h: 0 };
+                renderBoxes();
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                
+                const rect = workspace.getBoundingClientRect();
+                let currentX = e.clientX - rect.left;
+                let currentY = e.clientY - rect.top;
+
+                // Clamp to bounds
+                currentX = Math.max(0, Math.min(currentX, rect.width));
+                currentY = Math.max(0, Math.min(currentY, rect.height));
+
+                // Calculate geometry
+                const px = Math.min(startX, currentX);
+                const py = Math.min(startY, currentY);
+                const pw = Math.abs(currentX - startX);
+                const ph = Math.abs(currentY - startY);
+
+                // Convert to fractions
+                currentMap[currentItem] = {
+                    x: Math.max(0, px / rect.width),
+                    y: Math.max(0, py / rect.height),
+                    w: Math.max(0, pw / rect.width),
+                    h: Math.max(0, ph / rect.height)
+                };
+
+                renderBoxes();
+                updatePreview();
+                updateOutput();
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                }
+            });
+
+            // Copy button
+            document.getElementById('btn-copy').addEventListener('click', () => {
+                outputCode.select();
+                document.execCommand('copy');
+                const btn = document.getElementById('btn-copy');
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = 'Copy Code', 2000);
+            });
+        }
+
+        function renderSpriteList() {
+            spriteList.innerHTML = '';
+            UTILS_KEYS.forEach(key => {
+                const btn = document.createElement('button');
+                btn.innerText = key;
+                btn.className = `text-left px-4 py-2 rounded font-bold transition-colors ${key === currentItem ? 'bg-pink-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`;
+                btn.onclick = () => {
+                    currentItem = key;
+                    renderSpriteList();
+                    renderBoxes();
+                    updatePreview();
+                };
+                spriteList.appendChild(btn);
+            });
+        }
+
+        function renderBoxes() {
+            boxesContainer.innerHTML = '';
+            const rect = workspace.getBoundingClientRect();
+            if (rect.width === 0) return; // Image not loaded yet
+
+            Object.entries(currentMap).forEach(([key, bounds]) => {
+                if (bounds.w <= 0 || bounds.h <= 0) return; // Skip empty
+                
+                const box = document.createElement('div');
+                const isActive = (key === currentItem);
+                box.className = `box ${isActive ? 'active' : ''}`;
+                
+                box.style.left = `${bounds.x * rect.width}px`;
+                box.style.top = `${bounds.y * rect.height}px`;
+                box.style.width = `${bounds.w * rect.width}px`;
+                box.style.height = `${bounds.h * rect.height}px`;
+
+                if (isActive) {
+                    const label = document.createElement('div');
+                    label.className = 'box-label';
+                    label.innerText = key;
+                    box.appendChild(label);
+                }
+
+                boxesContainer.appendChild(box);
+            });
+        }
+
+        function updatePreview() {
+            const def = currentMap[currentItem];
+            if (!def || def.w <= 0 || def.h <= 0) {
+                previewDiv.style.cssText = `display: none;`;
+                return;
+            }
+
+            // Math matches exactly how index.html parses it
+            const posX = def.w < 1 ? (def.x / (1 - def.w)) * 100 : 0;
+            const posY = def.h < 1 ? (def.y / (1 - def.h)) * 100 : 0;
+            
+            previewDiv.style.cssText = `
+                width: 60px; 
+                height: 60px;
+                background-image: url('${imgSrc}'); 
+                background-size: ${100/def.w}% ${100/def.h}%; 
+                background-position: ${posX}% ${posY}%; 
+                background-repeat: no-repeat;
+                border-radius: 4px;
+            `;
+        }
+
+        function updateOutput() {
+            const lines = UTILS_KEYS.map(k => {
+                const v = currentMap[k] || {x:0, y:0, w:0, h:0};
+                return `            ${k.padEnd(12)}: { x: ${v.x.toFixed(2)}, y: ${v.y.toFixed(2)}, w: ${v.w.toFixed(2)}, h: ${v.h.toFixed(2)} }`;
+            });
+            outputCode.value = `        const UTILS_MAP = {\n${lines.join(', \n')}\n        };`;
+        }
+
+        // Boot
+        window.addEventListener('load', init);
+
+    </script>
+</body>
+</html>
