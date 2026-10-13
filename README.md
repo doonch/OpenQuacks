@@ -9,6 +9,71 @@ On iPhone/iPad, the in-app Settings → "How to Install on iPhone" walks you thr
 
 File any issues or contribute to the code here.
 
+## Project Architecture & File Structure
+
+The codebase is organized into modular files separating HTML markup, styles, game data, core simulation logic, canvas rendering, and app initialization:
+
+```
+├── index.html              # Main HTML markup: board layout, panels, and modals
+├── css/
+│   └── style.css           # UI styles, theme variables, responsive layout, animations
+├── js/
+│   ├── data.js             # Game constants, ingredient book sets (1-4), track maps, i18n helper
+│   ├── sprites.js          # Sprite sheet coordinates, asset preloading, cookies & preferences
+│   ├── engine.js           # Core game engine: QuacksPlayer, GameController, and Bot AI logic
+│   ├── ui.js               # QuacksUIManager: Canvas rendering, animations, audio, modals, tutorial
+│   └── app.js              # Bootstrap entry: PWA registration, language detection, game setup
+├── lang/                   # Localization JSON files (en, es, he, ar, fa, de, ja, etc.)
+├── assets/                 # Sprite sheets, video backgrounds, icons, and audio
+├── manifest.json           # Progressive Web App (PWA) manifest configuration
+└── sw.js                   # Service Worker for offline caching and media range requests
+```
+
+### Module Responsibilities
+
+- **`index.html`**
+  Contains the structural markup of the game: Cauldron canvas container, player rosters, status headers, control buttons, and 9 modal overlays (Shop, Bag View, Character Select, Settings, Ingredient Books, Game Over, and Action Prompts). It imports the modular scripts in dependency order.
+
+- **`css/style.css`**
+  Defines CSS custom properties (colors, dimensions, safe area insets for mobile devices), board grid layouts, responsive breakpoints for portrait/landscape screens, modal overlay styling, and animation keyframes.
+
+- **`js/data.js`**
+  Houses immutable and configurable game data:
+  - Global `I18N` store and `t(key, fallback)` translation helper.
+  - Pot board spiral track score, rubies, and coin mappings (`TRACK_DATA`).
+  - All four Ingredient Book Sets (`INGREDIENT_BOOKS_SET_1` through `SET_4`) detailing token rules and prices.
+  - Fortune Teller card deck definitions and Achievement catalogs.
+
+- **`js/sprites.js`**
+  Manages graphic asset definitions and helper utilities:
+  - Sprite sheet grid mappings (`CHIP_SPRITE_MAP`, `UTIL_SPRITE_MAP`, `CHAR_SPRITE_MAP`, `BOOK_SPRITE_MAP`).
+  - Helper functions for creating inline sprite elements (`createChipSprite`, `createUtilSprite`).
+  - Cookie helpers and player preference storage (sound volume, fast AI mode).
+  - `AssetManager`: handles preloading and caching of sprite images and textures.
+
+- **`js/engine.js`**
+  Contains pure game logic and simulation state, decoupled from the DOM:
+  - **`QuacksPlayer`**: Manages individual player state (bag tokens, drawn chips, pot position, victory points, rubies, rat tails, character powers) and AI bot heuristics (evaluating draw risk, purchasing strategies, power activations).
+  - **`GameController`**: Governs round transitions (Day 1 through 9), round phases (Brewing, Evaluation, Market/Buying, Cleanup), fortune teller events, and game-over conditions.
+
+- **`js/ui.js`**
+  Implements **`QuacksUIManager`**, coordinating user input and visual presentation:
+  - High-performance HTML5 Canvas rendering for the pot track spiral, chip placement, droplet marker, and explosion visual effects.
+  - Audio synthesizer & sound effect playback using the Web Audio API.
+  - Modal dialog controllers and inventory visualizers.
+  - Interactive onboarding tutorial system with a subtle top-corner skip option.
+
+- **`js/app.js`**
+  Application entry point:
+  - Registers the Service Worker (`sw.js`) and handles update prompts.
+  - Handles iOS "Add to Home Screen" installation hints.
+  - Initializes the selected language from cookie/browser preferences and applies localized text to DOM elements (`[data-i18n]`).
+  - Unlocks audio contexts on first user touch/click.
+  - Instantiates `GameController` and `QuacksUIManager` to start the game.
+
+- **`sw.js`**
+  PWA Service Worker implementing versioned caching (`CACHE_NAME`). Pre-caches all scripts, stylesheets, translations, and media to ensure complete offline functionality, with support for HTTP 206 partial range requests on iOS Safari.
+
 ## Deployment
 
 This repo deploys to GitHub Pages via two workflows under `.github/workflows/`,

@@ -1,0 +1,427 @@
+/* CSS Variables */
+:root {
+    --bg-color: #1a1a2e;
+    --panel-bg: #16213e;
+    --panel-border: #0f3460;
+    --text-main: #e94560;
+    --text-light: #f5f5f5;
+    --accent: #e94560;
+    --canvas-bg: #22223b;
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    /* Allow vertical scrolling, block pinch-zoom and double-tap-zoom
+       at the CSS level. touch-action does NOT inherit, so it must be
+       set on every element — body alone is not enough. canvas
+       overrides this to 'none' below for custom touch handling. */
+    touch-action: pan-y;
+}
+
+/* Block iOS long-press callout (Save Image, Copy) only on the
+   media-bearing elements where it actually matters. Applying this
+   to all elements via * can interfere with iOS Safari's synthesized
+   click events on plain divs and break the tutorial highlight taps. */
+canvas, video, img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Disallow text selection on body/UI text by default, but inputs
+   and editable areas remain selectable. Applied to body rather
+   than * so it doesn't interfere with iOS click delegation on
+   interactive elements. */
+body {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+html, body {
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-light);
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: var(--sat) var(--sar) var(--sab) var(--sal);
+}
+
+/* --- Loading Screen Overlay --- */
+#loading-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    height: 100dvh;
+    background: var(--bg-color); z-index: 9999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.spinner {
+    width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite; margin-top: 20px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Main CSS Grid Layout */
+#game-container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+    gap: 15px;
+    padding: 15px;
+    height: 100%;
+    width: 100%;
+}
+
+.panel {
+    background-color: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.panel-title {
+    color: var(--text-main);
+    border-bottom: 2px solid var(--panel-border);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#main-board { grid-column: 1 / 2; grid-row: 1 / 2; }
+.board-sections { display: flex; height: 100%; gap: 20px; justify-content: center; }
+.board-section {
+    flex: 0 1 auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+}
+
+#fortune-teller { border: 2px solid #800080; background: rgba(128, 0, 128, 0.1); }
+#ui-fortune-text { font-style: italic; color: #dda0dd; margin-top: 10px; }
+
+#ui-human-face { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+#ui-human-face:hover { transform: scale(1.05); box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); border-color: gold !important; }
+
+#side-panel { grid-column: 2 / 3; grid-row: 1 / 3; overflow-y: auto; display: flex; flex-direction: column; }
+.player-card { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px; margin-bottom: 15px; }
+
+#cauldron-wrapper {
+    grid-column: 1 / 2; grid-row: 2 / 3;
+    background-color: var(--canvas-bg); border-radius: 8px;
+    position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+    border: 2px dashed #4a4e69;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-height: 100%;
+    min-height: 0;
+    justify-self: center;
+    align-self: center;
+}
+
+canvas { display: block; outline: none; -webkit-tap-highlight-color: transparent; }
+
+button {
+    flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 1rem;
+    font-weight: bold; cursor: pointer; transition: all 0.2s;
+    background-color: var(--accent); color: white; text-transform: uppercase;
+}
+button:hover:not(:disabled) { background-color: #ff5c77; transform: translateY(-2px); }
+button:active:not(:disabled) { transform: translateY(0); }
+button:disabled { background-color: #444; color: #888; cursor: not-allowed; transform: none; }
+
+#btn-toggle-values {
+    position: absolute; top: 10px; left: 10px; z-index: 10; 
+    background: rgba(0,0,0,0.5); border: 2px solid #4a4e69; 
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; 
+    padding: 0; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    color: white; transition: all 0.2s;
+}
+#btn-toggle-values:hover {
+    background: rgba(0,0,0,0.8);
+    transform: scale(1.1);
+}
+
+#btn-sell-potion {
+    position: absolute; bottom: 10px; left: 10px; z-index: 10; 
+    background: rgba(0,0,0,0.5); border: 2px solid #4a4e69; 
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; 
+    padding: 0; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+    color: white; transition: all 0.2s;
+}
+#btn-sell-potion:hover:not(:disabled) {
+    background: rgba(0,0,0,0.8);
+    transform: scale(1.1);
+    border-color: #4caf50;
+}
+#btn-sell-potion:disabled {
+    opacity: 0.5; cursor: not-allowed;
+}
+
+#ui-sack {
+    position: absolute; bottom: 10px; right: 10px; z-index: 10; 
+    display: flex; align-items: center; justify-content: center; 
+    transition: all 0.2s; cursor: pointer;
+}
+#ui-sack:hover {
+    transform: scale(1.05);
+}
+#ui-sack-icon {
+    width: 100%; height: 100%; pointer-events: none;
+}
+#ui-bag-count {
+    position: absolute; top: 55%; left: 50%; transform: translate(-50%, -20%);
+    color: white; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.8); pointer-events: none;
+}
+
+#ui-boomberry-meter {
+    position: absolute; top: 10px; right: 10px; z-index: 10;
+    background: rgba(0,0,0,0.5); border: 2px solid #4a4e69;
+    border-radius: 15px; overflow: hidden; display: flex; 
+    align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+#ui-boomberry-fill {
+    position: absolute; top: 0; left: 0; height: 100%; 
+    width: 0%; background-color: #ffffff; 
+    transition: width 0.3s ease, background-color 0.3s ease; z-index: 1;
+}
+
+#ui-boomberry-text {
+    position: relative; z-index: 2; width: 100%; 
+    text-align: center; color: #ffffff; font-weight: bold; 
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,0.8);
+    direction: ltr; /* Ensure numbers don't flip in RTL */
+}
+
+/* --- Animations --- */
+@keyframes flip-vertical {
+    0% { transform: scaleY(1); }
+    50% { transform: scaleY(0); }
+    100% { transform: scaleY(1); }
+}
+.flip-vertical {
+    animation: flip-vertical 0.4s ease-in-out;
+}
+
+@keyframes toast-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.toast-animate {
+    animation: toast-pop 0.3s ease-out forwards;
+}
+
+/* --- Tutorial Styles --- */
+/* Note: tutorial-overlay deliberately uses 100vh (not 100dvh).
+   On iOS Safari, mixing 100dvh with position:fixed and an opacity
+   transition can shuffle layer compositing as the URL bar
+   collapses, causing the .tutorial-highlight (which should sit
+   above this overlay via z-index) to end up visually below it
+   after a moment. 100vh keeps the layer stable. */
+#tutorial-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.75); z-index: 2000;
+    display: none; pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    cursor: pointer; /* Fixes iOS Safari click delegation bug */
+}
+.tutorial-highlight {
+    z-index: 2001 !important;
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.8) !important;
+    border: 2px solid gold !important;
+    animation: pulse-glow 1.5s infinite alternate;
+    pointer-events: auto !important;
+    cursor: pointer; /* Ensures taps register on iOS Safari */
+}
+.tutorial-relative {
+    position: relative !important;
+}
+#ui-sack.tutorial-highlight {
+    background-color: transparent !important;
+    border-radius: 50%;
+    z-index: 2002 !important;
+}
+#btn-sell-potion.tutorial-highlight {
+    background-color: rgba(0,0,0,0.9) !important;
+    z-index: 2002 !important;
+}
+#ui-boomberry-meter.tutorial-highlight {
+    z-index: 2002 !important;
+}
+@keyframes pulse-glow {
+    from { box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.8); }
+    to { box-shadow: 0 0 25px 10px rgba(255, 215, 0, 1); }
+}
+#tutorial-tooltip {
+    position: fixed;
+    background: #fff; color: #000; padding: 12px 18px; border-radius: 8px;
+    font-weight: bold; font-size: 1.05rem; z-index: 2003;
+    max-width: 250px; text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+#tutorial-skip-btn {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top, 14px));
+    right: max(18px, env(safe-area-inset-right, 18px));
+    z-index: 2005;
+    background: rgba(20, 20, 35, 0.6);
+    color: #9ca3af;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: color 0.2s, background 0.2s, opacity 0.3s, border-color 0.2s;
+    opacity: 0;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    user-select: none;
+    -webkit-user-select: none;
+}
+#tutorial-skip-btn:hover {
+    color: #e5e7eb;
+    background: rgba(30, 30, 50, 0.85);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+[dir="rtl"] #tutorial-skip-btn {
+    right: auto;
+    left: max(18px, env(safe-area-inset-left, 18px));
+}
+
+/* --- Modal & Shop Styles --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    height: 100dvh;
+    background: rgba(0,0,0,0.8); display: none;
+    justify-content: center; align-items: center; z-index: 1000;
+    padding: var(--sat) var(--sar) var(--sab) var(--sal);
+}
+.modal-content {
+    background: var(--panel-bg); border: 2px solid var(--panel-border);
+    border-radius: 12px; padding: 20px; max-width: 600px; width: 90%;
+    max-height: 90vh; overflow-y: auto; overflow-x: hidden;
+    text-align: center; color: var(--text-light); box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+.modal-content h2 { color: var(--text-main); margin-bottom: 10px; }
+.modal-content button { margin: 5px; padding: 8px 16px; font-size: 1rem; }
+
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 15px; }
+.shop-item {
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; border: 2px solid transparent;
+    position: relative;
+}
+.shop-item:hover { background: rgba(0,0,0,0.5); }
+.shop-item.disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tooltip {
+    visibility: hidden; width: 160px; background-color: #0f3460; color: #fff;
+    text-align: center; border-radius: 6px; padding: 8px; position: absolute;
+    z-index: 1001; bottom: 105%; left: 50%; transform: translateX(-50%);
+    opacity: 0; transition: opacity 0.2s; font-size: 0.75rem; pointer-events: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5); font-weight: normal; border: 1px solid #4a4e69;
+}
+.shop-item:hover .tooltip { visibility: visible; opacity: 1; }
+
+.chip-icon { 
+    width: 36px; height: 36px; border-radius: 50%; display: flex; 
+    align-items: center; justify-content: center; font-weight: bold; 
+}
+
+.icon-small { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 5px; }
+
+/* --- Mobile / Tablet Portrait Responsive Layout --- */
+/* In portrait mode the body itself scrolls (matching upstream).
+   We tried locking body and scrolling #game-container instead
+   for a more "native" feel, but that broke the tutorial flow:
+   #tutorial-overlay (pointer-events: auto) catches scroll
+   gestures, and iOS Safari can't redirect them through to a
+   constrained scrollable child the way it natively scrolls
+   the body underneath a fixed overlay. Body-scroll wins. */
+@media (max-aspect-ratio: 1/1) {
+    body {
+        height: auto;
+        overflow-y: auto;
+    }
+    #game-container {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+    #main-board {
+        order: 1;
+    }
+    #cauldron-wrapper {
+        order: 2;
+        aspect-ratio: 1 / 1;
+        width: 100%;
+        min-height: 300px;
+    }
+    #side-panel {
+        order: 3;
+        overflow-y: visible;
+        height: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-content: flex-start;
+        gap: 15px;
+    }
+    #side-panel > .panel-title {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    .board-sections {
+        flex-wrap: wrap;
+    }
+    #player-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex: 1 1 250px;
+        padding-right: 0 !important;
+        overflow: visible !important;
+    }
+    #game-console {
+        flex: 1 1 250px !important;
+        margin-top: 0 !important;
+        max-height: 600px;
+    }
+    .player-card {
+        margin-bottom: 0;
+    }
+}
