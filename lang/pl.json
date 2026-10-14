@@ -219,5 +219,19 @@
   "vp": "PZ",
   "char_engineer": "Inżynier",
   "shop_desc_engineer": "Kupuj wszystkie żetony bez ograniczeń – nielimitowane zakupy i wiele w tym samym kolorze!",
-  "book_brown": "Specjalny składnik robaka. Precyzyjnie posuwa się do przodu."
+  "book_brown": "Specjalny składnik robaka. Precyzyjnie posuwa się do przodu.",
+  "book4_black": "Koniec rundy: Najwięcej czaszek kruka = +1 krok kropli i +1 PZ. Remis na 1. miejscu = +1 rubin (min 1 czaszka).",
+  "book4_blue": "Spójrz na kolejne 2 żetony w worku (4 przy Duchu 4). Możesz położyć 1 w kociołku, a resztę odłożyć.",
+  "book4_green": "Koniec rundy: 1 PZ za każdą parę pająków. Jeśli kociołek nie wybuchł, zyskaj też +1 rubin.",
+  "book4_purple": "Koniec rundy: 1 ćma = 1 rubin. 2 ćmy = 1 rubin i 1 PZ. 3+ ćmy = 2 rubiny i 2 PZ.",
+  "book4_red": "Jeśli w kociołku masz już co najmniej dwa żetony o wartości 1, przesuń się o 1 pole dalej (o 2 przy 4+).",
+  "book4_yellow": "Jeśli poprzedni żeton był wybuchowy, zwróć go do worka (obniżając sumę wybuchu).",
+  "settings_set4": "Zestaw 4 (Wysokie ryzyko i tempo)",
+  "ach_webmaster_title": "Mistrz pajęczyny",
+  "ach_webmaster_desc": "Ukończ niewybuchnięty kociołek z co najmniej 12 pająkami",
+  "ach_seance_master_title": "Mistrz seansu",
+  "ach_seance_master_desc": "Ułóż 4 duchy z rzędu bez wybuchu",
+  "modal_ghost_gaze_title": "👻 Eteryczne spojrzenie",
+  "modal_ghost_gaze_desc": "Zajrzałeś do worka! Wybierz 1 żeton do położenia w kociołku lub spasuj.",
+  "btn_pass": "Pasuj (Zwróć do worka)"
 }

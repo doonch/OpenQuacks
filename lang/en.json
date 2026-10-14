@@ -219,5 +219,19 @@
   "vp": "VP",
   "char_engineer": "The Engineer",
   "shop_desc_engineer": "Buy all tokens with no limitations — unlimited purchases, and multiple of any color!",
-  "book_brown": "Special bug ingredient. Crawls ahead with precision."
+  "book_brown": "Special bug ingredient. Crawls ahead with precision.",
+  "book4_black": "End of Round: Most Crow Skulls = +1 Droplet & +1 VP. Tied for most = +1 Ruby (min 1 Crow Skull).",
+  "book4_blue": "Look at the next 2 chips in your bag (4 for Ghost 4). You may place 1 in your cauldron and return the rest.",
+  "book4_green": "End of Round: 1 VP for every pair of Spiders. If cauldron did not explode, gain +1 Ruby as well.",
+  "book4_purple": "End of Round: 1 Moth = 1 Ruby. 2 Moths = 1 Ruby & 1 VP. 3+ Moths = 2 Rubies & 2 VP.",
+  "book4_red": "If your cauldron already contains 2+ chips of value 1, move 1 extra space (2 extra spaces if 4+).",
+  "book4_yellow": "If the previous chip was a Boomberry, return that Boomberry to your bag, lowering your explosion count.",
+  "settings_set4": "Set 4 (High Stakes & Tempo)",
+  "ach_webmaster_title": "Webmaster",
+  "ach_webmaster_desc": "Finish an unexploded cauldron with 12 or more Green chips",
+  "ach_seance_master_title": "Séance Master",
+  "ach_seance_master_desc": "Chain 4 consecutive Ghost placements without exploding",
+  "modal_ghost_gaze_title": "👻 Ethereal Gaze",
+  "modal_ghost_gaze_desc": "You peered into your bag! Choose 1 chip to place in your cauldron, or pass.",
+  "btn_pass": "Pass (Return to Bag)"
 }

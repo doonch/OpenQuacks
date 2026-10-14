@@ -1,14 +1,22 @@
-const CACHE_NAME = 'open-quacks-v28';
+const CACHE_NAME = 'open-quacks-v33';
 
 // List of all files necessary to run the game offline
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
+    './css/style.css',
+    './js/data.js',
+    './js/sprites.js',
+    './js/engine.js',
+    './js/ui.js',
+    './js/app.js',
     './manifest.json',
     './assets/icon.png',
     './assets/icon-192.png',
     './assets/icon-512.png',
     './assets/achievements.png',
+    './assets/ach_webmaster.png',
+    './assets/ach_seance_master.png',
     './assets/cauldron_board.png',
     './assets/tokens.png',
     './assets/utils.png',
