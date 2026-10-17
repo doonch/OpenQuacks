@@ -2514,9 +2514,19 @@
                 
                 // Meditation Button Logic (Monk)
                 const medBtn = document.getElementById('btn-meditation');
+                const medIcon = document.getElementById('ui-meditation-icon');
                 if (medBtn) {
                     if (this.game.config.useCharacterPowers && human.character === 'MONK' && !human.specialPowerUsed && !human.hasStopped && !human.exploded && this.game.phase === 'Brewing') {
                         medBtn.style.display = 'block';
+                        if (medIcon) {
+                            if (this.assets.MEDITATION && this.assets.MEDITATION.naturalWidth > 0) {
+                                medIcon.style.cssText = `width: 100%; height: 100%; ${getMeditationSpriteStyle()}`;
+                                medIcon.innerText = '';
+                            } else {
+                                medIcon.style.cssText = `width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem;`;
+                                medIcon.innerText = '🧘';
+                            }
+                        }
                     } else {
                         medBtn.style.display = 'none';
                     }
