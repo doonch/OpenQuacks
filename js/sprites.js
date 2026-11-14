@@ -46,7 +46,8 @@ const ASSET_PATHS = {
     UTILS: 'assets/utils.png',
     CHARACTERS: 'assets/characters.png',
     UTILS_EXP: 'assets/utils_exp.png',
-    ACHIEVEMENTS: 'assets/achievements.png'
+    ACHIEVEMENTS: 'assets/achievements.png',
+    MEDITATION: 'assets/power_meditation.png'
 };
 
 // Exact fractional coordinates for the 6x4 layout
@@ -155,6 +156,10 @@ function getUtilExpSpriteStyle(utilKey) {
     const posX = def.w < 1 ? (def.x / (1 - def.w)) * 100 : 0;
     const posY = def.h < 1 ? (def.y / (1 - def.h)) * 100 : 0;
     return `background-image: url('${ASSET_PATHS.UTILS_EXP}'); background-size: ${100/def.w}% ${100/def.h}%; background-position: ${posX}% ${posY}%; background-repeat: no-repeat;`;
+}
+
+function getMeditationSpriteStyle() {
+    return `background-image: url('${ASSET_PATHS.MEDITATION}'); background-size: cover; background-position: center; background-repeat: no-repeat; border-radius: 50%;`;
 }
 
 function getCharacterSpriteStyle(charName, moodName) {
