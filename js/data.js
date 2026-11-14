@@ -399,6 +399,9 @@ function initGameData() {
                     const whiteChip = p.cauldron.splice(p.cauldron.length - 2, 1)[0];
                     p.currentWhiteValue = Math.max(0, p.currentWhiteValue - whiteChip.value);
                     p.bag.push({ type: whiteChip.type, value: whiteChip.value });
+                    if (p.isHuman && p.game.uiManager) {
+                        p.game.uiManager.animateReturnToSack(whiteChip, c.drawnAt);
+                    }
                     if (p.game.uiManager) {
                         p.game.uiManager.addLog(`<span style="color:${p.isHuman ? 'gold' : '#ccc'}">[${p.name}]</span>'s Mandrake cleansed <strong style="color:white">Boomberry ${whiteChip.value}</strong> back into the bag!`);
                     }

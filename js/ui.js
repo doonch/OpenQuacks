@@ -139,6 +139,7 @@
             }
 
             playQueuedSackAnimations() {
+                this.sackAnimations = [];
                 this.pendingSackAnimations.forEach((chipDef, i) => {
                     this.animateToSack(chipDef, i * 200);
                 });
@@ -150,6 +151,22 @@
                     chipDef: chipDef,
                     startTime: Date.now() + delay,
                     duration: 800 // Milliseconds for the chip to drop into the sack
+                });
+            }
+
+            animateReturnToSack(chip, triggerTime = Date.now(), delay = 220) {
+                if (!chip || chip.spaceIndex === undefined) return;
+                this.sackAnimations.push({
+                    chipDef: {
+                        typeId: chip.type.id,
+                        value: chip.value,
+                        color: chip.type.color,
+                        textCol: chip.type.textCol
+                    },
+                    fromSpaceIndex: chip.spaceIndex,
+                    chipDrawnAt: chip.drawnAt,
+                    startTime: triggerTime + delay,
+                    duration: 600
                 });
             }
 
@@ -2116,6 +2133,12 @@
                         }
                     }
 
+                    const now = Date.now();
+                    this.sackAnimations = this.sackAnimations.filter(anim => (now - anim.startTime) < anim.duration);
+                    while (this.sackAnimations.length > player.bag.length) {
+                        this.sackAnimations.shift();
+                    }
+
                     // Calculate display count (subtracting currently animating chips)
                     const displayBagCount = Math.max(0, player.bag.length - this.sackAnimations.length);
                     const bagCountEl = document.getElementById('ui-bag-count');
@@ -2174,47 +2197,11 @@
                         this.ctx.restore();
                     }
 
-                    // NEW: Draw Sack Animations
                     const offsetX = (w - baseSize) / 2;
                     const offsetY = (h - baseSize) / 2;
                     const sackSize = baseSize * 0.15;
                     const sackX = w - offsetX - sackSize - 10; // Corresponds exactly to CSS right: offsetX + 10px
                     const sackY = h - offsetY - sackSize - 10; // Corresponds exactly to CSS bottom: offsetY + 10px
-                    
-                    const now = Date.now();
-                    this.sackAnimations = this.sackAnimations.filter(anim => {
-                        const age = now - anim.startTime;
-                        if (age < 0) return true; // Delayed start
-                        if (age >= anim.duration) return false;
-
-                        const progress = age / anim.duration;
-                        const easeIn = progress * progress; // Accelerate downward
-                        
-                        const currentX = sackX + sackSize / 2;
-                        const startY = -chipSize;
-                        const targetY = sackY + sackSize / 2;
-                        const currentY = startY + (targetY - startY) * easeIn;
-
-                        this.ctx.globalAlpha = elementAlpha;
-                        
-                        const cDef = CHIP_SPRITE_MAP[`${anim.chipDef.typeId}_${anim.chipDef.value}`];
-                        const imgChips = this.assets.CHIPS;
-                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
-                            const sx = cDef.x * imgChips.width;
-                            const sy = cDef.y * imgChips.height;
-                            const sw = cDef.w * imgChips.width;
-                            const sh = cDef.h * imgChips.height;
-                            
-                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
-                        } else {
-                            // Fallback circles
-                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
-                            this.ctx.fillStyle = anim.chipDef.color || '#ffffff'; this.ctx.fill();
-                            this.ctx.fillStyle = anim.chipDef.textCol || '#000000'; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
-                            this.ctx.fillText(anim.chipDef.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
-                        }
-                        return true;
-                    });
 
                     // 5. Draw Placed Chips (with Animation, Fade-In and Global Fade-Out)
                     player.cauldron.forEach(chip => {
@@ -2223,7 +2210,7 @@
 
                         // Animation Math
                         const animDuration = 600;
-                        const age = chip.drawnAt ? Date.now() - chip.drawnAt : animDuration;
+                        const age = chip.drawnAt ? now - chip.drawnAt : animDuration;
                         const progress = Math.min(1.0, Math.max(0, age / animDuration));
                         const easeOut = 1 - Math.pow(1 - progress, 3); // Cubic ease-out
                         
@@ -2254,6 +2241,81 @@
                             this.ctx.fillStyle = chip.type.textCol; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
                             this.ctx.fillText(chip.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
                         }
+                    });
+
+                    // 6. Draw Sack Animations (top-to-sack drops and board-to-sack returns)
+                    this.sackAnimations = this.sackAnimations.filter(anim => {
+                        const age = now - anim.startTime;
+                        if (age >= anim.duration) return false;
+
+                        let currentX, currentY;
+
+                        if (anim.fromSpaceIndex !== undefined) {
+                            const boardPos = this.spiralSpaces[anim.fromSpaceIndex];
+                            if (!boardPos) return false;
+
+                            let originX = boardPos.x;
+                            let originY = boardPos.y;
+                            if (anim.chipDrawnAt) {
+                                const drawOriginX = sackX + sackSize / 2;
+                                const drawOriginY = sackY - chipSize / 2;
+                                const refTime = Math.min(now, anim.startTime);
+                                const drawAge = Math.max(0, refTime - anim.chipDrawnAt);
+                                const drawProg = Math.min(1.0, drawAge / 600);
+                                const drawEase = 1 - Math.pow(1 - drawProg, 3);
+                                originX = drawOriginX + (boardPos.x - drawOriginX) * drawEase;
+                                originY = drawOriginY + (boardPos.y - drawOriginY) * drawEase;
+                            }
+
+                            const entryAlpha = anim.chipDrawnAt ? Math.min(1.0, Math.max(0, (now - anim.chipDrawnAt) / 300.0)) : 1.0;
+
+                            if (age < 0) {
+                                currentX = originX;
+                                currentY = originY;
+                                this.ctx.globalAlpha = Number((elementAlpha * entryAlpha).toFixed(3));
+                            } else {
+                                const progress = age / anim.duration;
+                                const t = progress * (0.35 + 0.65 * progress);
+                                const targetX = sackX + sackSize / 2;
+                                const targetY = sackY + sackSize / 2;
+                                const ctrlX = targetX;
+                                const ctrlY = Math.max(chipOffset, Math.min(originY, sackY - sackSize * 0.5) - chipSize * 0.5);
+                                const invT = 1 - t;
+                                currentX = invT * invT * originX + 2 * invT * t * ctrlX + t * t * targetX;
+                                currentY = invT * invT * originY + 2 * invT * t * ctrlY + t * t * targetY;
+
+                                const exitAlpha = progress > 0.8 ? Math.max(0, 1 - (progress - 0.8) / 0.2) : 1.0;
+                                this.ctx.globalAlpha = Number((elementAlpha * entryAlpha * exitAlpha).toFixed(3));
+                            }
+                        } else {
+                            if (age < 0) return true; // Delayed start
+                            const progress = age / anim.duration;
+                            const easeIn = progress * progress; // Accelerate downward
+
+                            currentX = sackX + sackSize / 2;
+                            const startY = -chipSize;
+                            const targetY = sackY + sackSize / 2;
+                            currentY = startY + (targetY - startY) * easeIn;
+                            this.ctx.globalAlpha = elementAlpha;
+                        }
+
+                        const cDef = CHIP_SPRITE_MAP[`${anim.chipDef.typeId}_${anim.chipDef.value}`];
+                        const imgChips = this.assets.CHIPS;
+                        if (cDef && imgChips && imgChips.complete && imgChips.naturalWidth > 0) {
+                            const sx = cDef.x * imgChips.width;
+                            const sy = cDef.y * imgChips.height;
+                            const sw = cDef.w * imgChips.width;
+                            const sh = cDef.h * imgChips.height;
+                            
+                            this.ctx.drawImage(imgChips, sx, sy, sw, sh, currentX - chipOffset, currentY - chipOffset, chipSize, chipSize);
+                        } else {
+                            // Fallback circles
+                            this.ctx.beginPath(); this.ctx.arc(currentX, currentY, chipSize * 0.4, 0, Math.PI*2);
+                            this.ctx.fillStyle = anim.chipDef.color || '#ffffff'; this.ctx.fill();
+                            this.ctx.fillStyle = anim.chipDef.textCol || '#000000'; this.ctx.font = `bold ${chipSize * 0.4}px Arial`;
+                            this.ctx.fillText(anim.chipDef.value, currentX - chipSize*0.1, currentY + chipSize*0.15);
+                        }
+                        return true;
                     });
                 }
                 
